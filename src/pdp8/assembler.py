@@ -1,6 +1,7 @@
 from io import StringIO
 
 from pdp8.core import PDP8, PrintingTracer
+from tests.helpers.checker import ConfigChecker
 
 
 class Assembler():
@@ -41,11 +42,13 @@ class Assembler():
 
 
 if __name__ == '__main__':
-    mess = PDP8(tracer=PrintingTracer())
-    asm = Assembler(mess)
+    pdp8 = PDP8(tracer=PrintingTracer())
+    asm = Assembler(pdp8)
     asm.org(100)
     asm.compile("""
         NOP
         HALT
         """)
-    mess.run(start=100, debugging=True)
+    pdp8.run(start=100, debugging=True)
+    ConfigChecker(pdp8).check(memory=[(0, 0)])
+    ConfigChecker(pdp8).check(pc=102)

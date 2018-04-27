@@ -32,6 +32,9 @@ class PrintingTracer(Tracer):
         print('PC(before): %5d Opcode: %-4s Accumulator: %5d Link: %d PC(after): %5d' %
               (old_pc, opcode, accumulator, link, new_pc))
 
+# TODO: create InstructionSet class
+
+
 class PDP8:
     W_BITS = 12                 # number of bits in a word
     W_MASK = 2 ** W_BITS - 1    # word mask

@@ -1,7 +1,36 @@
 # coding: utf-8
+from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from io import StringIO
 
+
+class Tracer(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def instruction(self, old_pc, opcode, accumulator, link, new_pc):
+        pass
+
+    @abstractmethod
+    def setting(self, address, contents):
+        pass
+
+
+class NullTracer(Tracer):
+    def instruction(self, old_pc, opcode, accumulator, link, new_pc):
+        pass
+
+    def setting(self, address, contents):
+        pass
+
+
+class PrintingTracer(Tracer):
+    def setting(self, address, contents):
+        print('setting %5d to %5d' % (address, contents))
+
+    def instruction(self, old_pc, opcode, accumulator, link, new_pc):
+        print('PC(before): %5d Opcode: %-4s Accumulator: %5d Link: %d PC(after): %5d' %
+              (old_pc, opcode, accumulator, link, new_pc))
 
 class PDP8:
     W_BITS = 12                 # number of bits in a word
@@ -12,7 +41,7 @@ class PDP8:
     V_MASK = 2 ** V_BITS - 1    # mask for instruction data
     MAX = 2 ** (V_BITS - 1)
 
-    def __init__(self):
+    def __init__(self, tracer=None):
         self.mem = 2**self.W_BITS*[0]
         self.pc = 0
         self.accumulator = 0
@@ -22,6 +51,9 @@ class PDP8:
         self.ops = self.setup_ops()
         self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
         self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
+        if tracer is None:
+            tracer = NullTracer()
+        self.tracer = tracer
 
     def setup_ops(self):
         ops = OrderedDict()
@@ -37,10 +69,13 @@ class PDP8:
         return ops
 
     def __getitem__(self, address):
-        return self.mem[address]
+        return self.mem[address] & self.W_MASK # only 12 bits retrieved
 
     def __setitem__(self, address, contents):
         self.mem[address] = contents & self.W_MASK # only 12 bits stored
+        if self.debugging:
+            self.tracer.setting(address, contents)
+
 
     def run(self, debugging=False, start=0, tape=''):
         self.running = True
@@ -52,15 +87,12 @@ class PDP8:
             self.execute(instruction)
 
     def execute(self, instruction):
-        if self.debugging:
-            print('PC: %d (PC) %5d  %4s %5d Accumulator: %5d' %
-                  (self.pc, instruction,
-                   self.mnemonic_for(instruction),
-                   instruction & self.V_MASK,
-                   self.accumulator))
+        old_pc = self.pc # for debugging
         op = self.opcode(instruction)
         self.pc += 1
         self.fns[op](instruction)
+        if self.debugging:
+            self.tracer.instruction(old_pc, self.mnemonic_for(instruction), self.accumulator, self.link, self.pc)
 
     def mnemonic_for(self, instruction):
         code = self.opcode(instruction)
@@ -78,9 +110,5 @@ class PDP8:
         if self.debugging:
             print('Halted')
         self.running = False
-    
-cpu = PDP8()
-cpu[0] = 0 # NOP
-cpu[1] = 1 << 9 # HALT
-cpu.run(debugging=True)
+
 

@@ -1,6 +1,6 @@
 from io import StringIO
 
-from pdp8.core import PDP8
+from pdp8.core import PDP8, PrintingTracer
 
 
 class Assembler():
@@ -41,11 +41,11 @@ class Assembler():
 
 
 if __name__ == '__main__':
-    mess = PDP8()
+    mess = PDP8(tracer=PrintingTracer())
     asm = Assembler(mess)
     asm.org(100)
     asm.compile("""
         NOP
         HALT
         """)
-    mess.run(start=100)
+    mess.run(start=100, debugging=True)

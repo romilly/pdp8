@@ -32,7 +32,21 @@ class PrintingTracer(Tracer):
         print('PC(before): %5d Opcode: %-4s Accumulator: %5d Link: %d PC(after): %5d' %
               (old_pc, opcode, accumulator, link, new_pc))
 
-# TODO: create InstructionSet class
+class InstructionSet():
+    def __init__(self):
+        self.ops = self.setup_ops()
+        self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
+        self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
+
+    def setup_ops(self):
+        ops = OrderedDict()
+        ops['NOP'] = PDP8.nop
+        ops['HALT'] = PDP8.halt
+        return ops
+
+    def mnemonic_for(self, instruction):
+        code = PDP8.opcode(instruction)
+        return self.mnemonics[code] if code < len(self.mnemonics) else '**'
 
 
 class PDP8:
@@ -51,25 +65,11 @@ class PDP8:
         self.link = 0
         self.running = False
         self.debugging = False
-        self.ops = self.setup_ops()
-        self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
-        self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
+        self.instruction_set = InstructionSet()
         if tracer is None:
             tracer = NullTracer()
         self.tracer = tracer
 
-    def setup_ops(self):
-        ops = OrderedDict()
-        ops['NOP'] = self.nop
-        # ops['LDC'] = self.ldc
-        # ops['ADC'] = self.adc
-        # ops['SBC'] = self.sbc
-        # ops['STA'] = self.sta
-        # ops['LDA'] = self.lda
-        # ops['IPA'] = self.ipa
-        # ops['OPA'] = self.opa
-        ops['HALT'] = self.halt
-        return ops
 
     def __getitem__(self, address):
         return self.mem[address] & self.W_MASK # only 12 bits retrieved
@@ -93,17 +93,14 @@ class PDP8:
         old_pc = self.pc # for debugging
         op = self.opcode(instruction)
         self.pc += 1
-        self.fns[op](instruction)
+        self.instruction_set.fns[op](self, instruction)
         if self.debugging:
             self.tracer.instruction(old_pc, self.mnemonic_for(instruction), self.accumulator, self.link, self.pc)
 
-    def mnemonic_for(self, instruction):
-        code = self.opcode(instruction)
-        return self.mnemonics[code] if code < len(self.mnemonics) else '**'
-
-    def opcode(self, instruction):
-        bits = instruction & self.OP_MASK
-        code = bits >> self.W_BITS - self.OP_BITS
+    @classmethod
+    def opcode(cls, instruction):
+        bits = instruction & cls.OP_MASK
+        code = bits >> cls.W_BITS - cls.OP_BITS
         return code
 
     def nop(self, instruction):
@@ -113,5 +110,8 @@ class PDP8:
         if self.debugging:
             print('Halted')
         self.running = False
+
+    def mnemonic_for(self, instruction):
+        return self.instruction_set.mnemonic_for(instruction)
 
 

@@ -7,6 +7,7 @@ from tests.helpers.checker import ConfigChecker
 class Assembler():
     def __init__(self, pdp8):
         self.pdp8 = pdp8
+        self.ops = pdp8.instruction_set.ops
         self.origin = 0
 
     def org(self, address):
@@ -26,8 +27,8 @@ class Assembler():
         parts = line.strip().split(' ')
         opcode = parts[0].strip()
         v = 0
-        if opcode in self.pdp8.ops:
-            op = list(self.pdp8.ops.keys()).index(opcode)
+        if opcode in self.ops:
+            op = list(self.ops.keys()).index(opcode)
         else:
             raise ValueError('Invalid opcode in %s' % line)
         if len(parts) == 2:

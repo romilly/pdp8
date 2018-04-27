@@ -1,36 +1,20 @@
-# coding: utf-8
-from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from io import StringIO
 
+from pdp8.tracing import NullTracer
 
-class Tracer(object):
-    __metaclass__ = ABCMeta
+"""
+(from https://en.wikipedia.org/wiki/PDP-8#Instruction_set)
+    000 – AND – AND the memory operand with AC.
+    001 – TAD – Two's complement ADd the memory operand to <L,AC> (a 12 bit signed value (AC) w. carry in L).
+    010 – ISZ – Increment the memory operand and Skip next instruction if result is Zero.
+    011 – DCA – Deposit AC into the memory operand and Clear AC.
+    100 – JMS – JuMp to Subroutine (storing return address in first word of subroutine!).
+    101 – JMP – JuMP.
+    110 – IOT – Input/Output Transfer (see below).
+    111 – OPR – microcoded OPeRations (see below). 
+"""
 
-    @abstractmethod
-    def instruction(self, old_pc, opcode, accumulator, link, new_pc):
-        pass
-
-    @abstractmethod
-    def setting(self, address, contents):
-        pass
-
-
-class NullTracer(Tracer):
-    def instruction(self, old_pc, opcode, accumulator, link, new_pc):
-        pass
-
-    def setting(self, address, contents):
-        pass
-
-
-class PrintingTracer(Tracer):
-    def setting(self, address, contents):
-        print('setting %5d to %5d' % (address, contents))
-
-    def instruction(self, old_pc, opcode, accumulator, link, new_pc):
-        print('PC(before): %5d Opcode: %-4s Accumulator: %5d Link: %d PC(after): %5d' %
-              (old_pc, opcode, accumulator, link, new_pc))
 
 class InstructionSet():
     def __init__(self):
@@ -40,8 +24,15 @@ class InstructionSet():
 
     def setup_ops(self):
         ops = OrderedDict()
-        ops['NOP'] = PDP8.nop
-        ops['HALT'] = PDP8.halt
+        ops['AND'] = PDP8.andi
+        ops['TAD'] = PDP8.tad
+        ops['ISZ'] = PDP8.isz
+        ops['DCA'] = PDP8.dca
+        ops['JMS'] = PDP8.jms
+        ops['JMP'] = PDP8.jmp
+        ops['IOT'] = PDP8.iot
+        # TODO: handle microcodes
+        ops['OPR'] = PDP8.opr
         return ops
 
     def mnemonic_for(self, instruction):
@@ -74,6 +65,13 @@ class PDP8:
     def __getitem__(self, address):
         return self.mem[address] & self.W_MASK # only 12 bits retrieved
 
+    # TODO: check and write tests for Z and I
+    def z_bit(self, instruction):
+        return 0 < instruction & 0o0200
+
+    def i_bit(self, instruction):
+        return 0 < instruction & 0o0400
+
     def __setitem__(self, address, contents):
         self.mem[address] = contents & self.W_MASK # only 12 bits stored
         if self.debugging:
@@ -103,15 +101,59 @@ class PDP8:
         code = bits >> cls.W_BITS - cls.OP_BITS
         return code
 
+    def andi(self, instruction):
+        self.accumulator &= self[self.address_for(instruction)]
+
+    # TODO: set carry bit
+    def tad(self, instruction):
+        self.accumulator += self[self.address_for(instruction)]
+
+    def isz(self, instruction):
+        address = self.address_for(instruction)
+        contents = self[address]
+        contents += 1
+        self[address] = contents
+        if contents == 0:
+            self.pc += 1 # skip
+
+    def dca(self, instruction):
+        self[self.address_for(instruction)] = self.accumulator
+        self.accumulator = 0
+
+    def jmp(self, instruction):
+        self.pc = self.address_for(instruction)
+
+    def jms(self, instruction):
+        self[self.address_for(instruction)] = self.pc
+        self.pc = self.address_for(instruction) + 1
+
+    # TODO: handle variants
+    def iot(self, instruction):
+        return self.tape.read(1)
+
     def nop(self, instruction):
         pass
 
-    def halt(self, instruction):
+    # TODO: handle variants
+    def opr(self, instruction):
         if self.debugging:
             print('Halted')
         self.running = False
 
     def mnemonic_for(self, instruction):
         return self.instruction_set.mnemonic_for(instruction)
+
+    def offset(self, instruction):
+        return instruction & self.V_MASK
+
+    def address_for(self, instruction):
+        o = self.offset(instruction)
+        if self.z_bit(instruction):
+            o += self.pc & 0o7600
+        if self.i_bit(instruction):
+            o = self[o]
+        return o
+
+
 
 

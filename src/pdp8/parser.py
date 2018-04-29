@@ -1,6 +1,7 @@
 from pdp8.reggies import *
 
-label = named_group('label', identifier+text(',')+space)
+comma = text(',')
+label = g('label', identifier + comma + space)
 
 
 class Texts(Term):
@@ -14,21 +15,36 @@ class Texts(Term):
 def texts(*texts):
     return Texts(*texts)
 
-offset = named_group('offset', space + digits|identifier)
-i = named_group('I', osp + optional(text('I')))
-z = named_group('Z', osp + optional(text('Z')))
-mri = named_group('mri', texts('AND', 'TAD', 'ISZ', 'DCA', 'JMS', 'JMP'))
+
+offset = g('offset', space + digits | identifier)
+i = g('I', osp + optional(text('I')))
+z = g('Z', osp + optional(text('Z')))
+mri = g('mri', texts('AND', 'TAD', 'ISZ', 'DCA', 'JMS', 'JMP'))
 
 
 class Parser:
-    def parse(self, line):
+    def mri(self, line):
         syntax = optional(label) + mri + i + z +  offset
-        # syntax = mri + osp + offset
-        m = syntax.matches(line)
-        return m.group('label'),m.group('mri'),m.group('I'), m.group('Z'), m.group('offset')
-        # return m.group('mri'), m.group('offset')
+        self.match = syntax.matches(line)
+        if self.match:
+            return self.values()
+        return None
 
-print(Parser().parse('AND 7'))
-print(Parser().parse('FOO, AND I Z 7'))
+    def values(self):
+        result = {}
+        for f in ['label','mri','I','Z','offset']:
+            value = self.field(f)
+            if value:
+                result[f] = value
+        return result
+
+    def field(self, name):
+        if not self.match:
+            return None
+        return self.match.group(name)
+
+
+print(Parser().mri('AND 7'))
+print(Parser().mri('FOO, AND I Z 7'))
 
 

@@ -133,7 +133,7 @@ def optional(term):
     return Optional(term)
 
 
-def named_group(name, term):
+def g(name, term):
     return NamedGroup(name, term)
 
 

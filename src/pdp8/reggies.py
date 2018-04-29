@@ -30,6 +30,12 @@ class Term():
     def is_simple(self):
         return False
 
+    def called(self, name):
+        return NamedGroup(name, self)
+
+    def names(self):
+        return []
+
 
 class Text(Term):
     def __init__(self, text):
@@ -44,7 +50,9 @@ class Text(Term):
     def escape_character(self, ch):
         return ch if ch not in '.^$*+?{}[]\|()' else r'\%s' % ch
 
+
 class Osp(Term):
+
     def expr(self):
         return '\s*'
 
@@ -57,6 +65,11 @@ class NamedGroup(Term):
     def expr(self):
         return '(?P<%s>%s)' % (self.name, self.term.expr())
 
+    def names(self):
+        return [self.name]
+
+
+
 class Character(Term):
     def expr(self):
         return '.'
@@ -66,11 +79,14 @@ class Character(Term):
 
 
 class Multiple(Term):
+    def __init__(self, term):
+        self.term = ncg(term)
+
     def expr(self):
         return self.term.expr()+'+'
 
-    def __init__(self, term):
-        self.term = ncg(term)
+    def names(self):
+        return self.term.names()
 
 
 class Optional(Term):
@@ -79,6 +95,9 @@ class Optional(Term):
 
     def expr(self):
         return self.option.expr()+'?'
+
+    def names(self):
+        return self.option.names()
 
 
 class BinaryTerm(Term):
@@ -92,14 +111,17 @@ class BinaryTerm(Term):
     def expr(self):
         pass
 
+    def names(self):
+        return self.left.names()+self.right.names()
+
 
 class Or(BinaryTerm):
     def __init__(self, left, right):
         BinaryTerm.__init__(self, left, right)
 
     def expr(self):
-
         return self.left.expr()+'|'+self.right.expr()
+
 
 class Capital(Term):
     def expr(self):
@@ -143,6 +165,9 @@ class NonCapturingGroup(Term):
 
     def expr(self):
         return '(?:%s)' % self.term.expr()
+
+    def names(self):
+        return self.term.names()
 
 
 def ncg(term):

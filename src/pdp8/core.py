@@ -15,6 +15,50 @@ from pdp8.tracing import NullTracer
     111 – OPR – microcoded OPeRations (see below). 
 """
 
+mri_values = {
+#                Octal     Memory
+# Mnemonic(2)    Value     Cycles(1) Instruction
+'AND':           0o0000, # 2         Logical AND
+'TAD':           0o1000, # 2         Two's Complement Add
+'DCA':           0o3000, # 2         Deposit and Clear the Accumulator
+'JMP':           0o5000, # 1         Jump
+'ISZ':           0o2000, # 2         Increment and Skip if Zero
+'JMS':           0o4000, # 2         Jump to Subroutine
+}
+
+g1values = {
+# Mnemonic  Octal   Operation                         Sequence
+'NOP':      0o7000, # No operation                         -
+'CLA':      0o7200, # Clear AC                             1
+'CLL':      0o7100, # Clear link bit                       1
+'СМА':      0o7040, # Complement AC                        2
+'CML':      0o7020, # Complement link bit                  2
+'RAR':      0o7010, # Rotate AC and L right one position   4
+'RAL':      0o7004, # Rotate AC and L left one position    4
+'RTR':      0o7012, # Rotate AC and L right two positions  4
+'RTL':      0o7006, # Rotate AC and L left two positions   4
+'IAC':      0o7001, # Increment AC                         3
+}
+
+g2values = {
+# Mnemonic  Octal   Operation                           Sequence
+'CLA':      0o7600, # Clear the accumulator               2
+'SMA':      0o7500, # Skip on minus accumulator           1
+'SPA':      0o7510, # Skip on positive accumulator        1
+#                    (or AC = 0)
+'SZA':      0o7440, # Skip on zero accumulator            1
+'SNA':      0o7450, # Skip on nonzero accumulator         1
+'SNL':      0o7420, # Skip on nonzero link                1
+'SZL':      0o7430, # Skip on zero link                   1
+'SKP':      0o7410, # Skip unconditionally                1
+'OSR':      0o7404, # Inclusive OR, switch register       3
+#                    with AC
+'HLT':      0o7402, # Halts the program                   3
+}
+
+opr_values = {**g1values, **g2values} # Yay for Python 3.5!
+
+
 
 class InstructionSet():
     def __init__(self):
@@ -61,7 +105,6 @@ class PDP8:
             tracer = NullTracer()
         self.tracer = tracer
 
-
     def __getitem__(self, address):
         return self.mem[address] & self.W_MASK # only 12 bits retrieved
 
@@ -76,7 +119,6 @@ class PDP8:
         self.mem[address] = contents & self.W_MASK # only 12 bits stored
         if self.debugging:
             self.tracer.setting(address, contents)
-
 
     def run(self, debugging=False, start=0, tape=''):
         self.running = True

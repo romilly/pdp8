@@ -69,7 +69,6 @@ class NamedGroup(Term):
         return [self.name]
 
 
-
 class Character(Term):
     def expr(self):
         return '.'

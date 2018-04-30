@@ -3,7 +3,7 @@ from unittest import TestCase
 from hamcrest import equal_to
 from hamcrest.core import assert_that
 
-from pdp8.reggies import *
+from pdp8.reggie import *
 
 
 class ReggiesTest(TestCase):

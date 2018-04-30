@@ -1,19 +1,6 @@
 from io import StringIO
-
 from pdp8.reggies import *
 
-
-
-class Texts(Term):
-    def __init__(self, *texts):
-        self.texts = texts
-
-    def expr(self):
-        return '(%s)' % '|'.join(self.texts)
-
-
-def texts(*texts):
-    return Texts(*texts)
 
 g1values = {
 # Mnemonic  Octal   Operation                         Sequence
@@ -53,6 +40,7 @@ g3values = {
 
 comma = text(',')
 star = text('*')
+
 label = (optional(identifier + comma + space).called('label'))
 offset = (space + (digits | identifier).called('offset'))
 i = (osp + optional(text('I').called('I')))
@@ -65,12 +53,18 @@ org = (star + digits.called('org'))
 
 
 class Parser:
-    def __init__(self):
-        self.statements = [
-            label + mri + i + z + offset,
-            label + opr,
-            org
-        ]
+    __metaclass__ = ABCMeta
+
+    def __init__(self, syntax, planter):
+        self.syntax = syntax
+        self.planter = planter
+        self.successor = None
+
+    def after(self, successor):
+        successor.successor = self
+        return successor
+
+
     def parse(self, input):
         for line in input:
             self.parse_line(line.strip())
@@ -84,22 +78,23 @@ class Parser:
     def parse_line(self, line):
         if not line:
             return
-        for statement in self.statements:
-            m = self.match(line, statement)
-            if m:
-                self.plant(m)
+        statement = self.match(line, self.syntax)
+        if statement:
+            self.plant(statement)
+        else:
+            self.pass_the_buck(line)
+
+    # need to over-ride for org
     def plant(self, parsed):
-        if parsed:
-            print(parsed)
-        return parsed
+        self.planter.plant(self.build_instruction(parsed))
 
     def values(self, match, term):
         result = {}
         names = term.names()
-        for fname in names:
-            value = self.field(fname, match)
+        for fieldname in names:
+            value = self.field(fieldname, match)
             if value:
-                result[fname] = value
+                result[fieldname] = value
         return result
 
     def field(self, fname, match):
@@ -107,16 +102,76 @@ class Parser:
             return None
         return match.group(fname)
 
+    def pass_the_buck(self, line):
+        if self.successor is None:
+            raise(ValueError('line %s does not match my syntax' % line))
+        self.successor.parse_line(line)
+
+    @abstractmethod
+    def build_instruction(self, parsed):
+        pass
+
+
+class Planter():
+    def __init__(self):
+        self.code = 4096*[0]
+        self.ic = 0
+        self.base = 8
+
+    def plant(self, instruction):
+        self.code[self.ic] = instruction
+        self.ic += 1
+
+    def org(self, location):
+        self.ic = int(location, self.base)
+
+
+class MriParser(Parser):
+    def __init__(self, planter):
+        Parser.__init__(self, label+mri+i+z+offset, planter)
+
+    def build_instruction(self, parsed):
+        return parsed
+
+class OprParser(Parser):
+    def __init__(self, planter):
+        Parser.__init__(self, label+opr, planter)
+
+    def build_instruction(self, parsed):
+        return parsed
+
+
+class Org(Parser):
+    def __init__(self, planter):
+        Parser.__init__(self, org, planter)
+
+    def build_instruction(self, parsed):
+        self.planter.org(parsed['org'])
+
+class ChainBuilder():
+    def __init__(self,*parsers):
+        self.parsers = parsers
+
+    def build(self):
+        for (parser, sucessor) in zip(self.parsers[:-1],self.parsers[1:]):
+            parser.successor = sucessor
+        return self.parsers[0]
+
+
+planter = Planter()
+pal = ChainBuilder(MriParser(planter),OprParser(planter),(Org(planter))).build()
+
+
 prog = """
 *200
 AND 7
 FOO, AND I Z 73
-*700
 NOP
 CLA CLL
 """
 
 f = StringIO(prog)
-Parser().parse(f)
+pal.parse(f)
+print(planter.code[128:138])
 
 

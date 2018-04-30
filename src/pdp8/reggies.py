@@ -187,6 +187,18 @@ class Space(Term):
         return '\s'
 
 
+class Texts(Term):
+    def __init__(self, *texts):
+        self.texts = texts
+
+    def expr(self):
+        return '(%s)' % '|'.join(self.texts)
+
+
+def texts(*texts):
+    return Texts(*texts)
+
+
 space = Space()
 plus = Text('+')
 digit = Digit()

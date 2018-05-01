@@ -84,6 +84,10 @@ class InstructionSet():
     def is_rl(self, instruction):
         return 0 != instruction & self.RAL
 
+    def is_iac(self, instruction):
+        return 0 != instruction & self.IAC
+
+
 
 class PDP8:
     # TODO simplify these, use constants rather than calculating?
@@ -156,7 +160,10 @@ class PDP8:
 
     # TODO: set carry bit
     def tad(self, instruction):
-        self.accumulator += self[self.address_for(instruction)]
+        self.add_12_bits(self[self.address_for(instruction)])
+
+    def add_12_bits(self, increment):
+        self.accumulator += increment
         total = self.accumulator
         self.accumulator &= octal('7777')
         if self.accumulator == total:
@@ -227,10 +234,9 @@ class PDP8:
                 self.accumulator |= 0o0001
             self.link = new_link
 
-    # def nop(self, instruction):
-    #     pass
+    def iac(self):
+        self.add_12_bits(1)
 
-    # TODO: handle variants
     def halt(self, instruction):
         if self.debugging:
             print('Halted')
@@ -251,18 +257,25 @@ class PDP8:
         return o
 
     def group1(self, instruction):
+        # sequence 1
         if self.ins.is_cla1(instruction):
             self.cla()
         if self.ins.is_cll(instruction):
             self.cll()
+        # sequence 2
         if self.ins.is_cma(instruction):
             self.cma()
         if self.ins.is_cml(instruction):
             self.cml()
+        # sequence 3
+        if self.ins.is_iac(instruction):
+            self.iac()
+        # sequence 4
         if self.ins.is_rr(instruction):
             self.rr(instruction)
         if self.ins.is_rl(instruction):
             self.rl(instruction)
+
 
 
 

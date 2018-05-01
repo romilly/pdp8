@@ -280,6 +280,30 @@ class OprTest(TestCase):
          self.pdp.run(stepping=True)
          self.check(accumulator=octal('7775'), link=1)
 
+    def test_iac0(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = 0
+         self.pdp.memory[0] = self.instruction('IAC')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=1, link=0)
+
+    def test_iac1(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('7777')
+         self.pdp.memory[0] = self.instruction('IAC')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=0, link=1)
+
+    def test_iar(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('7777')
+         self.pdp.memory[0] = self.instruction('RAL IAC') # IAC should execute first!
+         self.pdp.run(stepping=True)
+         self.check(accumulator=1, link=0)
+
+
+
+
 
 
 

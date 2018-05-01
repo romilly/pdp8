@@ -63,20 +63,74 @@ class MriTest(TestCase):
         self.pdp.run(stepping=True)
         self.checker.check(accumulator=4)
 
+    def test_p_zero_reference(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[octal('200')] = self.pal.instruction('AND Z 2')
+        self.pdp.memory[2] = 4
+        self.pdp.run(start=octal('200'), stepping=True)
+        self.checker.check(accumulator=4)
+
     def test_page_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('AND Z 2') # in page 1
+        self.pdp.memory[octal('200')] = self.pal.instruction('AND 2') # in page 1
         self.pdp.memory[octal('202')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.checker.check(accumulator=4)
 
-    def test_i_and_z_reference(self):
+    def test_indirect_and_page_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('AND I Z 2') # in page 1
+        self.pdp.memory[octal('200')] = self.pal.instruction('AND I 2') # in page 1
         self.pdp.memory[octal('202')] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.checker.check(accumulator=4)
+
+    def test_indirect_and_zero_reference(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[octal('200')] = self.pal.instruction('AND I Z 2') # 2 in page 0
+        self.pdp.memory[2] = octal('203')
+        self.pdp.memory[octal('203')] = 4
+        self.pdp.run(start=octal('200'), stepping=True)
+        self.checker.check(accumulator=4)
+
+    def test_indirection_assignment(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[0] = self.pal.instruction('DCA I 2')
+        self.pdp.memory[2] = 3
+        self.pdp.memory[3] = 4
+        self.pdp.run(stepping=True)
+        self.checker.check(memory={3:7}, accumulator=0)
+
+    def test_p_zero_assignment(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[octal('200')] = self.pal.instruction('DCA Z 2')
+        self.pdp.memory[2] = 4
+        self.pdp.run(start=octal('200'), stepping=True)
+        self.checker.check(memory={2:7}, accumulator=0)
+
+    def test_page_assignment(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[octal('200')] = self.pal.instruction('DCA 2') # in page 1
+        self.pdp.memory[octal('202')] = 4
+        self.pdp.run(start=octal('200'), stepping=True)
+
+    def test_indirect_and_page_assignment(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[octal('200')] = self.pal.instruction('DCA I 2') # in page 1
+        self.pdp.memory[octal('202')] = octal('203')
+        self.pdp.memory[octal('203')] = 4
+        self.pdp.run(start=octal('200'), stepping=True)
+        self.checker.check(memory={octal('203'):7}, accumulator=0)
+
+    def test_indirect_and_zero_assignment(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[octal('200')] = self.pal.instruction('DCA I Z 2') # 2 in page 0
+        self.pdp.memory[2] = octal('203')
+        self.pdp.memory[octal('203')] = 4
+        self.pdp.run(start=octal('200'), stepping=True)
+        self.checker.check(memory={octal('203'):7}, accumulator=0)
+
+
 
 
 

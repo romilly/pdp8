@@ -226,7 +226,7 @@ class PDP8:
 
     def address_for(self, instruction):
         o = self.offset(instruction)
-        if self.z_bit(instruction):
+        if not self.z_bit(instruction):
             o += self.pc & 0o7600
         if self.i_bit(instruction):
             o = self[o]

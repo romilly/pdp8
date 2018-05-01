@@ -301,6 +301,16 @@ class OprTest(TestCase):
          self.pdp.run(stepping=True)
          self.check(accumulator=1, link=0)
 
+    def test_g1order(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('1234')
+         # order should be CLA (ac=0); CMA (ac = 7777), IAC (acc=0, link = 1), RAL (acc = 1, link =0)
+         self.pdp.memory[0] = self.instruction('RAL IAC CLA CMA') #
+         self.pdp.run(stepping=True)
+         self.check(accumulator=1, link=0)
+
+
+
 
 
 

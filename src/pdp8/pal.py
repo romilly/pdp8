@@ -115,9 +115,9 @@ class MriParser(Parser):
     def build_instruction(self, parsed):
         op = mri_values[parsed['mri']]
         if 'I' in parsed:
-            op |= 0o1000
-        if 'Z' in parsed:
             op |= 0o0400
+        if 'Z' in parsed:
+            op |= 0o0200
         op |= int(parsed['offset'], self.base)
         return op
 

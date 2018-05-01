@@ -103,6 +103,8 @@ class InstructionSet():
 
 
 class PDP8:
+    # TODO simplify these, use constants rather than calculating?
+    # and add I, Z
     W_BITS = 12                 # number of bits in a word
     W_MASK = 2 ** W_BITS - 1    # word mask
     OP_BITS = 3                 # 3 bits in the opcode

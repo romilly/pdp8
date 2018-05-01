@@ -37,5 +37,48 @@ class MriTest(TestCase):
         self.pdp.run(stepping=True)
         self.checker.check(memory={2:0},pc=2)
 
+    def test_dca(self):
+        self.pdp.accumulator = 1
+        self.pdp.memory[0] = self.pal.instruction('DCA 2')
+        self.pdp.memory[2] = -1
+        self.pdp.run(stepping=True)
+        self.checker.check(memory={2:1}, pc=1, accumulator=0)
+
+    def test_jms(self):
+        self.pdp.memory[0] = self.pal.instruction('JMS 2')
+        self.pdp.memory[2] = 0
+        self.pdp.run(stepping=True)
+        self.checker.check(memory={2:1}, pc=3)
+
+    def test_jmp(self):
+        self.pdp.memory[0] = self.pal.instruction('JMP 2')
+        self.pdp.run(stepping=True)
+        self.checker.check(pc=2)
+
+    def test_indirection_reference(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[0] = self.pal.instruction('AND I 2')
+        self.pdp.memory[2] = 3
+        self.pdp.memory[3] = 4
+        self.pdp.run(stepping=True)
+        self.checker.check(accumulator=4)
+
+    def test_page_reference(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[octal('200')] = self.pal.instruction('AND Z 2') # in page 1
+        self.pdp.memory[octal('202')] = 4
+        self.pdp.run(start=octal('200'), stepping=True)
+        self.checker.check(accumulator=4)
+
+    def test_i_and_z_reference(self):
+        self.pdp.accumulator = 7
+        self.pdp.memory[octal('200')] = self.pal.instruction('AND I Z 2') # in page 1
+        self.pdp.memory[octal('202')] = octal('203')
+        self.pdp.memory[octal('203')] = 4
+        self.pdp.run(start=octal('200'), stepping=True)
+        self.checker.check(accumulator=4)
+
+
+
 
 

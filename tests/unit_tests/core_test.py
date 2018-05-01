@@ -11,87 +11,101 @@ class MriTest(TestCase):
         self.checker = ConfigChecker(self.pdp)
         self.pal = Pal()
 
+    def instruction(self, text):
+        return self.pal.instruction(text)
+
+    def check(self, memory=None, pc=None, accumulator=None, link=None):
+        self.checker.check(memory, pc, accumulator, link)
+
     def test_and(self):
         self.pdp.accumulator = octal('7070')
-        self.pdp.memory[0] = self.pal.instruction('AND 2')
+        self.pdp.memory[0] = self.instruction('AND 2')
         self.pdp.memory[2] = octal('1120')
         self.pdp.run(stepping=True)
-        self.checker.check(accumulator=octal('1020'))
+        self.check(accumulator=octal('1020'))
 
     def test_tad(self):
+        self.link = 1
         self.pdp.accumulator = octal('007')
-        self.pdp.memory[0] = self.pal.instruction('TAD 2')
+        self.pdp.memory[0] = self.instruction('TAD 2')
         self.pdp.memory[2] = 1
         self.pdp.run(stepping=True)
-        self.checker.check(accumulator=octal('010'))
+        self.check(accumulator=octal('010'), link=0)
+
+    def test_tad_with_carry(self):
+        self.pdp.accumulator = octal('7777')
+        self.pdp.memory[0] = self.instruction('TAD 2')
+        self.pdp.memory[2] = 1
+        self.pdp.run(stepping=True)
+        self.check(accumulator=0, link=1)
 
     def test_isz_no_skip(self):
-        self.pdp.memory[0] = self.pal.instruction('ISZ 2')
+        self.pdp.memory[0] = self.instruction('ISZ 2')
         self.pdp.memory[2] = 1
         self.pdp.run(stepping=True)
-        self.checker.check(memory={2:2},pc=1)
+        self.check(memory={2:2},pc=1)
 
     def test_isz_with_skip(self):
-        self.pdp.memory[0] = self.pal.instruction('ISZ 2')
+        self.pdp.memory[0] = self.instruction('ISZ 2')
         self.pdp.memory[2] = -1
         self.pdp.run(stepping=True)
-        self.checker.check(memory={2:0},pc=2)
+        self.check(memory={2:0},pc=2)
 
     def test_dca(self):
         self.pdp.accumulator = 1
-        self.pdp.memory[0] = self.pal.instruction('DCA 2')
+        self.pdp.memory[0] = self.instruction('DCA 2')
         self.pdp.memory[2] = -1
         self.pdp.run(stepping=True)
-        self.checker.check(memory={2:1}, pc=1, accumulator=0)
+        self.check(memory={2:1}, pc=1, accumulator=0)
 
     def test_jms(self):
-        self.pdp.memory[0] = self.pal.instruction('JMS 2')
+        self.pdp.memory[0] = self.instruction('JMS 2')
         self.pdp.memory[2] = 0
         self.pdp.run(stepping=True)
-        self.checker.check(memory={2:1}, pc=3)
+        self.check(memory={2:1}, pc=3)
 
     def test_jmp(self):
         self.pdp.memory[0] = self.pal.instruction('JMP 2')
         self.pdp.run(stepping=True)
-        self.checker.check(pc=2)
+        self.check(pc=2)
 
     def test_indirection_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[0] = self.pal.instruction('AND I 2')
+        self.pdp.memory[0] = self.instruction('AND I 2')
         self.pdp.memory[2] = 3
         self.pdp.memory[3] = 4
         self.pdp.run(stepping=True)
-        self.checker.check(accumulator=4)
+        self.check(accumulator=4)
 
     def test_p_zero_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('AND Z 2')
+        self.pdp.memory[octal('200')] = self.instruction('AND Z 2')
         self.pdp.memory[2] = 4
         self.pdp.run(start=octal('200'), stepping=True)
-        self.checker.check(accumulator=4)
+        self.check(accumulator=4)
 
     def test_page_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('AND 2') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('AND 2') # in page 1
         self.pdp.memory[octal('202')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
-        self.checker.check(accumulator=4)
+        self.check(accumulator=4)
 
     def test_indirect_and_page_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('AND I 2') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('AND I 2') # in page 1
         self.pdp.memory[octal('202')] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
-        self.checker.check(accumulator=4)
+        self.check(accumulator=4)
 
     def test_indirect_and_zero_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('AND I Z 2') # 2 in page 0
+        self.pdp.memory[octal('200')] = self.instruction('AND I Z 2') # 2 in page 0
         self.pdp.memory[2] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
-        self.checker.check(accumulator=4)
+        self.check(accumulator=4)
 
     def test_indirection_assignment(self):
         self.pdp.accumulator = 7
@@ -99,24 +113,25 @@ class MriTest(TestCase):
         self.pdp.memory[2] = 3
         self.pdp.memory[3] = 4
         self.pdp.run(stepping=True)
-        self.checker.check(memory={3:7}, accumulator=0)
+        self.check(memory={3:7}, accumulator=0)
 
     def test_p_zero_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('DCA Z 2')
+        self.pdp.memory[octal('200')] = self.instruction('DCA Z 2')
         self.pdp.memory[2] = 4
         self.pdp.run(start=octal('200'), stepping=True)
-        self.checker.check(memory={2:7}, accumulator=0)
+        self.check(memory={2:7}, accumulator=0)
 
     def test_page_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('DCA 2') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('DCA 2') # in page 1
         self.pdp.memory[octal('202')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
+        self.check(memory={octal('202'):7}, accumulator=0)
 
     def test_indirect_and_page_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('DCA I 2') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('DCA I 2') # in page 1
         self.pdp.memory[octal('202')] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
@@ -124,11 +139,155 @@ class MriTest(TestCase):
 
     def test_indirect_and_zero_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.pal.instruction('DCA I Z 2') # 2 in page 0
+        self.pdp.memory[octal('200')] = self.instruction('DCA I Z 2') # 2 in page 0
         self.pdp.memory[2] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.checker.check(memory={octal('203'):7}, accumulator=0)
+
+
+class OprTest(TestCase):
+    def setUp(self):
+        self.pdp = PDP8()
+        self.checker = ConfigChecker(self.pdp)
+        self.pal = Pal()
+
+    def instruction(self, text):
+        return self.pal.instruction(text)
+
+    def check(self, memory=None, pc=None, accumulator=None, link=None):
+        self.checker.check(memory, pc, accumulator, link)
+
+    def test_nop1(self):
+        self.pdp.memory[0] = self.instruction('NOP')
+        self.pdp.run(stepping=True)
+        self.check(pc=1, accumulator=0, link=0)
+
+    def test_cla1(self):
+        self.pdp.accumulator = 1
+        self.pdp.memory[0] = self.instruction('CLA')
+        self.pdp.run(stepping=True)
+        self.check(accumulator=0, link=0)
+
+    def test_cll(self):
+        self.pdp.link = 1
+        self.pdp.memory[0] = self.instruction('CLL')
+        self.pdp.run(stepping=True)
+        self.check(accumulator=0, link=0)
+
+    def test_cla_and_cll(self):
+        self.pdp.link = 1
+        self.pdp.accumulator = 1
+        self.pdp.memory[0] = self.instruction('CLA CLL')
+        self.pdp.run(stepping=True)
+        self.check(accumulator=0, link=0)
+
+    def test_cll_and_cla(self):
+        self.pdp.link = 1
+        self.pdp.accumulator = 1
+        self.pdp.memory[0] = self.instruction('CLL CLA')
+        self.pdp.run(stepping=True)
+        self.check(accumulator=0, link=0)
+
+    def test_cma(self):
+        self.pdp.link = 1
+        self.pdp.accumulator = 0
+        self.pdp.memory[0] = self.instruction('CMA')
+        self.pdp.run(stepping=True)
+        self.check(accumulator=octal('7777'), link=1)
+
+    def test_cml0(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = 0
+         self.pdp.memory[0] = self.instruction('CML')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('0'), link=1)
+
+    def test_cml1(self):
+         self.pdp.link = 1
+         self.pdp.accumulator = 0
+         self.pdp.memory[0] = self.instruction('CML')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('0'), link=0)
+
+    def test_rar00(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('7777')
+         self.pdp.memory[0] = self.instruction('RAR')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('3777'), link=1)
+
+    def test_rar01(self):
+         self.pdp.link = 1
+         self.pdp.accumulator = octal('7777')
+         self.pdp.memory[0] = self.instruction('RAR')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('7777'), link=1)
+
+    def test_rar10(self):
+         self.pdp.link = 1
+         self.pdp.accumulator = octal('7776')
+         self.pdp.memory[0] = self.instruction('RAR')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('7777'), link=0)
+
+    def test_rar11(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('7776')
+         self.pdp.memory[0] = self.instruction('RAR')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('3777'), link=0)
+
+    def test_rtr(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('7777')
+         self.pdp.memory[0] = self.instruction('RTR')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('5777'), link=1)
+
+    def test_ral00(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('7777')
+         self.pdp.memory[0] = self.instruction('RAL')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('7776'), link=1)
+
+    def test_ral01(self):
+         self.pdp.link = 1
+         self.pdp.accumulator = octal('7777')
+         self.pdp.memory[0] = self.instruction('RAL')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('7777'), link=1)
+
+    def test_ral10(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('3777')
+         self.pdp.memory[0] = self.instruction('RAL')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('7776'), link=0)
+
+    def test_ral11(self):
+         self.pdp.link = 1
+         self.pdp.accumulator = octal('3777')
+         self.pdp.memory[0] = self.instruction('RAL')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('7777'), link=0)
+
+    def test_rtl(self):
+         self.pdp.link = 0
+         self.pdp.accumulator = octal('7777')
+         self.pdp.memory[0] = self.instruction('RTL')
+         self.pdp.run(stepping=True)
+         self.check(accumulator=octal('7775'), link=1)
+
+
+
+
+
+
+
+
+
 
 
 

@@ -32,5 +32,7 @@ class ConfigChecker(object):
             assert_that(self.pdp8.pc == pc, 'expected pc=%d but pc=%d' % (pc, self.pdp8.pc))
         if accumulator is not None:
             assert_that(self.pdp8.accumulator == accumulator, 'expected ac=%d but ac=%d' % (accumulator, self.pdp8.accumulator))
+        if link is not None:
+            assert_that(self.pdp8.link == link, 'expected link=%d but link=%d' % (link, self.pdp8.link))
 
 

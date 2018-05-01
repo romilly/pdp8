@@ -56,5 +56,13 @@ class ReggieTest(TestCase):
 
         # TODO: add tests for NamedGroups
 
+    def test_texts(self):
+        term = texts('AA','BB','CCC','D')
+        assert_that(term.matches('AA'))
+        assert_that(term.matches('AAA'), equal_to(None))
+        assert_that(term.matches('BB'))
+        assert_that(term.matches('CCC'))
+        assert_that(term.matches('D'))
+
 
 

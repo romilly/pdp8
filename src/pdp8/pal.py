@@ -1,8 +1,4 @@
-from io import StringIO
-
-from pdp8.core import mri_values, opr_values, PDP8, g1values, g2values
 from pdp8.reggie import *
-from pdp8.tracing import PrintingTracer
 
 comma = text(',')
 star = text('*')
@@ -12,10 +8,57 @@ offset = (space + (digits | identifier).called('offset'))
 i = (osp + optional(text('I').called('I')))
 z = (osp + optional(text('Z').called('Z')))
 mri = texts('AND', 'TAD', 'ISZ', 'DCA', 'JMS', 'JMP').called('mri')
-g1 =  multiple(osp+texts('NOP', 'CLA', 'CLL', 'СМА', 'CML', 'RAR', 'RAL', 'RTR', 'RTL', 'IAC')).called('group1')
+g1 =  multiple(osp+texts('NOP', 'CLA', 'CLL', 'CMA', 'CML', 'RAR', 'RAL', 'RTR', 'RTL', 'IAC')).called('group1')
 g2 =  multiple(osp+texts('CLA', 'HLT', 'OSR', 'SKP', 'SMA', 'SNA', 'SNL', 'SPA', 'SZA', 'SZL')).called('group2')
 opr = (g1 | g2).called('opr')
 org = (star + digits.called('org'))
+
+
+mri_values = {
+#                Octal     Memory
+# Mnemonic(2)    Value     Cycles(1) Instruction
+'AND':           0o0000, # 2         Logical AND
+'TAD':           0o1000, # 2         Two's Complement Add
+'ISZ':           0o2000, # 2         Increment and Skip if Zero
+'DCA':           0o3000, # 2         Deposit and Clear the Accumulator
+'JMS':           0o4000, # 2         Jump to Subroutine
+'JMP':           0o5000, # 1         Jump
+}
+
+g1values = {
+# Mnemonic  Octal   Operation                         Sequence
+'NOP':      0o7000, # No operation                         -
+'CLA':      0o7200, # Clear AC                             1
+'CLL':      0o7100, # Clear link bit                       1
+'CMA':      0o7040, # Complement AC                        2
+'CML':      0o7020, # Complement link bit                  2
+'RAR':      0o7010, # Rotate AC and L right one position   4
+'RAL':      0o7004, # Rotate AC and L left one position    4
+'RTR':      0o7012, # Rotate AC and L right two positions  4
+'RTL':      0o7006, # Rotate AC and L left two positions   4
+'IAC':      0o7001, # Increment AC                         3
+}
+
+
+
+g2values = {
+# Mnemonic  Octal   Operation                           Sequence
+'CLA':      0o7600, # Clear the accumulator               2
+'SMA':      0o7500, # Skip on minus accumulator           1
+'SPA':      0o7510, # Skip on positive accumulator        1
+#                    (or AC = 0)
+'SZA':      0o7440, # Skip on zero accumulator            1
+'SNA':      0o7450, # Skip on nonzero accumulator         1
+'SNL':      0o7420, # Skip on nonzero link                1
+'SZL':      0o7430, # Skip on zero link                   1
+'SKP':      0o7410, # Skip unconditionally                1
+'OSR':      0o7404, # Inclusive OR, switch register       3
+#                    with AC
+'HLT':      0o7402, # Halts the program                   3
+}
+
+opr_values = {**g1values, **g2values} # Yay for Python 3.5!
+
 
 
 class Parser:
@@ -33,7 +76,9 @@ class Parser:
 
     def parse(self, input):
         for line in input:
-            self.parse_line(self.strip(line))
+            decommented_and_trimmed = self.strip(line)
+            if len(decommented_and_trimmed) > 0:
+                self.parse_line(decommented_and_trimmed)
 
     def match(self, line, statement):
         m = statement.matches(line)
@@ -42,15 +87,13 @@ class Parser:
         return None
 
     def parse_line(self, line):
-        if not line:
-            return
         statement = self.match(line, self.syntax)
-        if statement is not None:
-            self.plant(statement)
-        else:
+        if statement is None:
             self.pass_the_buck(line)
+        else:
+            self.plant(statement)
 
-    # need to over-ride for org
+    # need to over-ride for org, 'cos it does not generate an instruction
     def plant(self, parsed):
         self.planter.plant(self.build_instruction(parsed))
 
@@ -77,7 +120,7 @@ class Parser:
     def build_instruction(self, parsed):
         pass
 
-    # remove
+    # remove comment text
     def strip(self, line):
         line = line.split('/')[0]
         return line.strip()
@@ -131,7 +174,8 @@ class OprParser(Parser):
         codes = parsed['opr'].split(' ')
         values = g1values if 'group1' in parsed else g2values
         for code in codes:
-            op |= values[code]
+            code_ = values[code]
+            op |= code_
         return op
 
 
@@ -141,6 +185,9 @@ class Org(Parser):
 
     def plant(self, parsed):
         self.planter.org(int(parsed['org'],self.base))
+
+    def build_instruction(self, parsed):
+        pass
 
 
 class ConstParser(Parser):
@@ -208,19 +255,21 @@ HLT
 """
 
 
-pal = Pal()
-# f = StringIO(prog)
-# code = pal.assemble(f)
-# for loc in range(4095):
-#     if code[loc] is not 0:
-#         print('%d %o' % (loc,code[loc]))
-# # for symbol in pal.planter.symbols:
-# #     print(symbol, pal.planter.symbols[symbol])
-# pdp8 = PDP8(tracer=PrintingTracer())
-# pdp8.memory = code
-# pdp8.run(debugging=True, start=128, stepping=True)
-# pdp8.run()
+if __name__=='__main__':
 
-print('%o' % pal.instruction('CLA CLL'))
+    pal = Pal()
+    # f = StringIO(prog)
+    # code = pal.assemble(f)
+    # for loc in range(4095):
+    #     if code[loc] is not 0:
+    #         print('%d %o' % (loc,code[loc]))
+    # # for symbol in pal.planter.symbols:
+    # #     print(symbol, pal.planter.symbols[symbol])
+    # pdp8 = PDP8(tracer=PrintingTracer())
+    # pdp8.memory = code
+    # pdp8.run(debugging=True, start=128, stepping=True)
+    # pdp8.run()
+
+    print('%o' % pal.instruction('CLA CLL'))
 
 

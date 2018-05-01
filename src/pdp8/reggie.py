@@ -192,7 +192,8 @@ class Texts(Term):
         self.texts = texts
 
     def expr(self):
-        return '(%s)' % '|'.join(self.texts)
+        texts_ = '(%s)' % '|'.join(self.texts)
+        return texts_
 
 
 def texts(*texts):

@@ -3,6 +3,8 @@ from io import StringIO
 
 from pdp8.tracing import NullTracer
 
+# TODO: move all mnemonic-based stuff into PAL
+
 """
 (from https://en.wikipedia.org/wiki/PDP-8#Instruction_set)
     000 – AND – AND the memory operand with AC.
@@ -20,10 +22,10 @@ mri_values = {
 # Mnemonic(2)    Value     Cycles(1) Instruction
 'AND':           0o0000, # 2         Logical AND
 'TAD':           0o1000, # 2         Two's Complement Add
-'DCA':           0o3000, # 2         Deposit and Clear the Accumulator
-'JMP':           0o5000, # 1         Jump
 'ISZ':           0o2000, # 2         Increment and Skip if Zero
+'DCA':           0o3000, # 2         Deposit and Clear the Accumulator
 'JMS':           0o4000, # 2         Jump to Subroutine
+'JMP':           0o5000, # 1         Jump
 }
 
 g1values = {
@@ -39,6 +41,8 @@ g1values = {
 'RTL':      0o7006, # Rotate AC and L left two positions   4
 'IAC':      0o7001, # Increment AC                         3
 }
+
+
 
 g2values = {
 # Mnemonic  Octal   Operation                           Sequence
@@ -56,15 +60,21 @@ g2values = {
 'HLT':      0o7402, # Halts the program                   3
 }
 
-opr_values = {**g1values, **g2values} # Yay for Python 3.5!
+def octal(string):
+    return int(string, 8)
 
+opr_values = {**g1values, **g2values} # Yay for Python 3.5!
 
 
 class InstructionSet():
     def __init__(self):
+        # TODO: separate emulator stuff from PAL stuff
         self.ops = self.setup_ops()
         self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
         self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
+        self.OPR_GROUP1 = octal('0400')
+        self.CLA1 = octal('0200')
+        self.CLL =  octal('0100')
 
     def setup_ops(self):
         ops = OrderedDict()
@@ -75,13 +85,21 @@ class InstructionSet():
         ops['JMS'] = PDP8.jms
         ops['JMP'] = PDP8.jmp
         ops['IOT'] = PDP8.iot
-        # TODO: handle microcodes
         ops['OPR'] = PDP8.opr
         return ops
 
     def mnemonic_for(self, instruction):
         code = PDP8.opcode(instruction)
         return self.mnemonics[code] if code < len(self.mnemonics) else '**'
+
+    def is_group1(self, instruction):
+        return 0 != instruction & self.OPR_GROUP1
+
+    def has_cla1(self, instruction):
+        return 0 != instruction & self.CLA1
+
+    def has_cll(self, instruction):
+        return 0 != instruction & self.CLL
 
 
 class PDP8:
@@ -94,19 +112,20 @@ class PDP8:
     MAX = 2 ** (V_BITS - 1)
 
     def __init__(self, tracer=None):
-        self.mem = 2**self.W_BITS*[0]
+        self.memory = 2 ** self.W_BITS * [0]
         self.pc = 0
         self.accumulator = 0
         self.link = 0
         self.running = False
         self.debugging = False
-        self.instruction_set = InstructionSet()
+        self.stepping = False
+        self.ins = InstructionSet()
         if tracer is None:
             tracer = NullTracer()
         self.tracer = tracer
 
     def __getitem__(self, address):
-        return self.mem[address] & self.W_MASK # only 12 bits retrieved
+        return self.memory[address] & self.W_MASK # only 12 bits retrieved
 
     # TODO: check and write tests for Z and I
     def z_bit(self, instruction):
@@ -116,14 +135,17 @@ class PDP8:
         return 0 < instruction & 0o0400
 
     def __setitem__(self, address, contents):
-        self.mem[address] = contents & self.W_MASK # only 12 bits stored
+        self.memory[address] = contents & self.W_MASK # only 12 bits stored
         if self.debugging:
             self.tracer.setting(address, contents)
 
-    def run(self, debugging=False, start=0, tape=''):
+    def run(self, debugging=False, start=None, tape='', stepping=None):
         self.running = True
-        self.pc = start
+        if start:
+            self.pc = start
         self.tape = StringIO(tape)
+        if stepping is not None:
+            self.stepping = stepping
         self.debugging = debugging
         while self.running:
             instruction = self[self.pc]
@@ -133,9 +155,11 @@ class PDP8:
         old_pc = self.pc # for debugging
         op = self.opcode(instruction)
         self.pc += 1
-        self.instruction_set.fns[op](self, instruction)
+        self.ins.fns[op](self, instruction)
         if self.debugging:
             self.tracer.instruction(old_pc, self.mnemonic_for(instruction), self.accumulator, self.link, self.pc)
+        if self.stepping:
+            self.running = False
 
     @classmethod
     def opcode(cls, instruction):
@@ -154,8 +178,8 @@ class PDP8:
         address = self.address_for(instruction)
         contents = self[address]
         contents += 1
-        self[address] = contents
-        if contents == 0:
+        self[address] = contents # forces 12-bit value
+        if self[address] == 0:
             self.pc += 1 # skip
 
     def dca(self, instruction):
@@ -173,17 +197,27 @@ class PDP8:
     def iot(self, instruction):
         return self.tape.read(1)
 
+    def opr(self, instruction):
+        if  self.ins.is_group1(instruction):
+            self.group1(instruction)
+
+    def cla(self):
+        self.accumulator = 0
+
+    def cll(self):
+        self.link = 0
+
     def nop(self, instruction):
         pass
 
     # TODO: handle variants
-    def opr(self, instruction):
+    def halt(self, instruction):
         if self.debugging:
             print('Halted')
         self.running = False
 
     def mnemonic_for(self, instruction):
-        return self.instruction_set.mnemonic_for(instruction)
+        return self.ins.mnemonic_for(instruction)
 
     def offset(self, instruction):
         return instruction & self.V_MASK
@@ -196,6 +230,23 @@ class PDP8:
             o = self[o]
         return o
 
+    def group1(self, instruction):
+        if self.ins.has_cla1(instruction):
+            self.cla()
+
+
+g1ops = {
+# 'NOP':      PDP8.nop,
+'CLA':      PDP8.cla, # Clear AC                             1
+# 'CLL':      0o7100, # Clear link bit                       1
+# 'СМА':      0o7040, # Complement AC                        2
+# 'CML':      0o7020, # Complement link bit                  2
+# 'RAR':      0o7010, # Rotate AC and L right one position   4
+# 'RAL':      0o7004, # Rotate AC and L left one position    4
+# 'RTR':      0o7012, # Rotate AC and L right two positions  4
+# 'RTL':      0o7006, # Rotate AC and L left two positions   4
+# 'IAC':      0o7001, # Increment AC                         3
+}
 
 
 

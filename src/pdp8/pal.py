@@ -1,8 +1,8 @@
 from io import StringIO
 
-from pdp8.core import mri_values, opr_values
+from pdp8.core import mri_values, opr_values, PDP8, g1values, g2values
 from pdp8.reggie import *
-
+from pdp8.tracing import PrintingTracer
 
 comma = text(',')
 star = text('*')
@@ -83,7 +83,6 @@ class Parser:
         return line.strip()
 
 
-
 class InstructionPlanter():
     def __init__(self):
         self.reset()
@@ -108,6 +107,7 @@ class InstructionPlanter():
             return self.symbols[symbol]
         raise(ValueError('symbol %s is undefined'))
 
+
 class MriParser(Parser):
     def __init__(self, planter):
         Parser.__init__(self, label+mri+i+z+offset, planter)
@@ -121,6 +121,7 @@ class MriParser(Parser):
         op |= int(parsed['offset'], self.base)
         return op
 
+
 class OprParser(Parser):
     def __init__(self, planter):
         Parser.__init__(self, label+opr, planter)
@@ -128,9 +129,11 @@ class OprParser(Parser):
     def build_instruction(self, parsed):
         op = 0
         codes = parsed['opr'].split(' ')
+        values = g1values if 'group1' in parsed else g2values
         for code in codes:
-            op |= opr_values[code]
+            op |= values[code]
         return op
+
 
 class Org(Parser):
     def __init__(self, planter):
@@ -139,12 +142,14 @@ class Org(Parser):
     def plant(self, parsed):
         self.planter.org(int(parsed['org'],self.base))
 
+
 class ConstParser(Parser):
     def __init__(self, planter):
         Parser.__init__(self, digits.called('digits'), planter)
 
     def build_instruction(self, parsed):
         return int(parsed['digits'],self.base)
+
 
 class LabelParser(Parser):
     def __init__(self, planter):
@@ -154,6 +159,7 @@ class LabelParser(Parser):
         if 'label' in parsed:
             self.planter.define(parsed['label'])
         self.planter.plant(0)
+
 
 class ChainBuilder():
     def __init__(self,*parsers):
@@ -174,6 +180,11 @@ class Pal():
                                   Org(self.planter),
                                   ConstParser(self.planter)).build()
 
+    def instruction(self, string):
+        self.planter.reset()
+        self.pass2.parse_line(string)
+        return self.planter.code[0]
+
     def assemble(self, file_like):
         self.planter.reset()
         self.pass1.parse(file_like)
@@ -187,21 +198,29 @@ prog = """
 / Comment
 *200 /start at octal 200
 START, CLA
-TAD 0205
-TAD 0206
-DCA 0207
+/TAD 0205
+/TAD 0206
+/DCA 0207
 HLT
 1537 / constants
 2241
 0000
 """
 
-f = StringIO(prog)
+
 pal = Pal()
-pal.assemble(f)
-for loc in range(128, 138):
-    print('%d %o' % (loc,pal.planter.code[loc]))
-for symbol in pal.planter.symbols:
-    print(symbol, pal.planter.symbols[symbol])
+# f = StringIO(prog)
+# code = pal.assemble(f)
+# for loc in range(4095):
+#     if code[loc] is not 0:
+#         print('%d %o' % (loc,code[loc]))
+# # for symbol in pal.planter.symbols:
+# #     print(symbol, pal.planter.symbols[symbol])
+# pdp8 = PDP8(tracer=PrintingTracer())
+# pdp8.memory = code
+# pdp8.run(debugging=True, start=128, stepping=True)
+# pdp8.run()
+
+print('%o' % pal.instruction('CLA CLL'))
 
 

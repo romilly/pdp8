@@ -52,7 +52,6 @@ class Text(Term):
 
 
 class Osp(Term):
-
     def expr(self):
         return '\s*'
 
@@ -66,8 +65,7 @@ class NamedGroup(Term):
         return '(?P<%s>%s)' % (self.name, self.term.expr())
 
     def names(self):
-        return [self.name]
-
+        return [self.name]+self.term.names()
 
 class Character(Term):
     def expr(self):
@@ -120,6 +118,9 @@ class Or(BinaryTerm):
 
     def expr(self):
         return self.left.expr()+'|'+self.right.expr()
+
+    def names(self):
+        return self.left.names()+self.right.names()
 
 
 class Capital(Term):

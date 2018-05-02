@@ -49,6 +49,7 @@ class InstructionSet():
         self.RTL =  octal('0006')
         self.IAC =  octal('0001')
         self.HALT = octal('0002')
+        self.BIT8 = octal('0010')
 
     def setup_ops(self):
         self.ops =  [PDP8.andi,
@@ -98,7 +99,8 @@ class InstructionSet():
     def is_halt(self, instruction):
         return 0 != instruction & self.HALT
 
-
+    def is_or_group(self, instruction):
+        return 0 == instruction & self.BIT8
 
 
 class PDP8:
@@ -210,6 +212,8 @@ class PDP8:
     def opr(self, instruction):
         if  self.ins.is_group1(instruction):
             self.group1(instruction)
+        if self.ins.is_group2(instruction):
+            self.group2(instruction)
 
     def cla(self):
         self.accumulator = 0
@@ -290,9 +294,22 @@ class PDP8:
         if self.ins.is_rl(instruction):
             self.rl(instruction)
 
+    # TODO: move instructionset stuff back into pdp8 and get rid of all these instruction parameters!
     def group2(self, instruction):
+        if self.ins.is_or_group(instruction):
+            if self.sma(instruction) or self.sza(instruction) or self.snl(instruction):
+                self.pc += 1
         if self.ins.is_halt(instruction):
             self.halt()
+
+    def sma(self, instruction):
+        return self.accumulator & octal('4000') and (instruction & octal('0100'))
+
+    def sza(self, instruction):
+        return False
+
+    def snl(self, instruction):
+        return False
 
 
 

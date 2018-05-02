@@ -318,12 +318,20 @@ class OprGroup1Test(TestCase):
          self.check(accumulator=1, link=0)
 
 
-# class OprGroup2Test(AbstractCodeTest):
-#     def test_halt(self):
-#         self.pdp.tracer = HaltTracer()
-#         self.pdp.memory[0] = self.instruction('HLT')  #
-#         self.pdp.run(stepping=True)
-#         assert_that(self.pdp.tracer.halted,'PDP8 should have executed HLT')
+class OprGroup2Test(AbstractCodeTest):
+    def test_halt(self):
+        self.pdp.tracer = HaltTracer()
+        self.pdp.memory[0] = self.instruction('HLT')  #
+        self.pdp.run(stepping=True)
+        assert_that(self.pdp.tracer.halted,'PDP8 should have executed HLT')
+
+    def test_sma(self):
+        self.pdp.accumulator = octal('7777') # -1
+        self.pdp.memory[0] = self.instruction('SMA') #
+        self.pdp.run(stepping=True)
+        self.check(pc=2)
+
+
 
 
 

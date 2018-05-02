@@ -38,6 +38,7 @@ class InstructionSet():
         # self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
         # self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
         self.OPR_GROUP1 = octal('0400')
+        self.OPR_GROUP2 = octal('0001')
         self.CLA1 = octal('0200')
         self.CLL =  octal('0100')
         self.CMA =  octal('0040')
@@ -47,6 +48,7 @@ class InstructionSet():
         self.RTR =  octal('0012')
         self.RTL =  octal('0006')
         self.IAC =  octal('0001')
+        self.HALT = octal('0002')
 
     def setup_ops(self):
         self.ops =  [PDP8.andi,
@@ -66,6 +68,7 @@ class InstructionSet():
     def is_group1(self, instruction):
         return 0 == instruction & self.OPR_GROUP1
 
+    # TODO: some refactoring here methinks
     def is_cla1(self, instruction):
         return 0 != instruction & self.CLA1
 
@@ -86,6 +89,15 @@ class InstructionSet():
 
     def is_iac(self, instruction):
         return 0 != instruction & self.IAC
+
+    def is_group2(self, instruction):
+        return (not self.is_group1(instruction)) and 0 == instruction & self.OPR_GROUP2
+
+
+    # Group 2
+    def is_halt(self, instruction):
+        return 0 != instruction & self.HALT
+
 
 
 
@@ -131,6 +143,7 @@ class PDP8:
         self.running = True
         if start:
             self.pc = start
+        # TODO: smarter tape creation to cope with text and binary tapes.
         self.tape = StringIO(tape)
         if stepping is not None:
             self.stepping = stepping
@@ -237,9 +250,10 @@ class PDP8:
     def iac(self):
         self.add_12_bits(1)
 
-    def halt(self, instruction):
+    def halt(self):
         if self.debugging:
             print('Halted')
+        self.tracer.halt(self.pc)
         self.running = False
 
     # def mnemonic_for(self, instruction):
@@ -275,6 +289,10 @@ class PDP8:
             self.rr(instruction)
         if self.ins.is_rl(instruction):
             self.rl(instruction)
+
+    def group2(self, instruction):
+        if self.ins.is_halt(instruction):
+            self.halt()
 
 
 

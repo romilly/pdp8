@@ -1,11 +1,16 @@
+from abc import ABCMeta
 from unittest import TestCase
+
+from hamcrest import assert_that
 
 from pdp8.core import PDP8, octal
 from pdp8.pal import Pal
+from pdp8.tracing import NullTracer, HaltTracer
 from tests.helpers.checker import ConfigChecker
 
+class AbstractCodeTest(TestCase):
+    __metaclass__ = ABCMeta
 
-class MriTest(TestCase):
     def setUp(self):
         self.pdp = PDP8()
         self.checker = ConfigChecker(self.pdp)
@@ -16,6 +21,9 @@ class MriTest(TestCase):
 
     def check(self, memory=None, pc=None, accumulator=None, link=None):
         self.checker.check(memory, pc, accumulator, link)
+
+
+class MriTest(AbstractCodeTest):
 
     def test_and(self):
         self.pdp.accumulator = octal('7070')
@@ -146,7 +154,7 @@ class MriTest(TestCase):
         self.checker.check(memory={octal('203'):7}, accumulator=0)
 
 
-class OprTest(TestCase):
+class OprGroup1Test(TestCase):
     def setUp(self):
         self.pdp = PDP8()
         self.checker = ConfigChecker(self.pdp)
@@ -308,6 +316,17 @@ class OprTest(TestCase):
          self.pdp.memory[0] = self.instruction('RAL IAC CLA CMA') #
          self.pdp.run(stepping=True)
          self.check(accumulator=1, link=0)
+
+
+# class OprGroup2Test(AbstractCodeTest):
+#     def test_halt(self):
+#         self.pdp.tracer = HaltTracer()
+#         self.pdp.memory[0] = self.instruction('HLT')  #
+#         self.pdp.run(stepping=True)
+#         assert_that(self.pdp.tracer.halted,'PDP8 should have executed HLT')
+
+
+
 
 
 

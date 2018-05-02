@@ -1,4 +1,4 @@
-from pdp8.reggie import *
+from reggie.core import *
 
 comma = text(',')
 star = text('*')
@@ -52,13 +52,10 @@ g2values = {
 'SNL':      0o7420, # Skip on nonzero link                1
 'SZL':      0o7430, # Skip on zero link                   1
 'SKP':      0o7410, # Skip unconditionally                1
-'OSR':      0o7404, # Inclusive OR, switch register       3
+'OSR':      0o7404, # Inclusive OR switch register       3
 #                    with AC
 'HLT':      0o7402, # Halts the program                   3
 }
-
-opr_values = {**g1values, **g2values} # Yay for Python 3.5!
-
 
 
 class Parser:
@@ -76,15 +73,13 @@ class Parser:
 
     def parse(self, input):
         for line in input:
-            decommented_and_trimmed = self.strip(line)
-            if len(decommented_and_trimmed) > 0:
-                self.parse_line(decommented_and_trimmed)
+            line = self.decommented_and_trimmed(line)
+            if len(line) > 0:
+                self.parse_line(line)
 
     def match(self, line, statement):
-        m = statement.matches(line)
-        if m:
-            return self.values(m, statement)
-        return None
+        return statement.matches(line)
+
 
     def parse_line(self, line):
         statement = self.match(line, self.syntax)
@@ -97,19 +92,6 @@ class Parser:
     def plant(self, parsed):
         self.planter.plant(self.build_instruction(parsed))
 
-    def values(self, match, term):
-        result = {}
-        names = term.names()
-        for fieldname in names:
-            value = self.field(fieldname, match)
-            if value:
-                result[fieldname] = value
-        return result
-
-    def field(self, fname, match):
-        if not match:
-            return None
-        return match.group(fname)
 
     def pass_the_buck(self, line):
         if self.successor is None:
@@ -121,9 +103,9 @@ class Parser:
         pass
 
     # remove comment text
-    def strip(self, line):
+    def decommented_and_trimmed(self, line):
         line = line.split('/')[0]
-        return line.strip()
+        return line.decommented_and_trimmed()
 
 
 class InstructionPlanter():
@@ -253,23 +235,4 @@ HLT
 2241
 0000
 """
-
-
-if __name__=='__main__':
-
-    pal = Pal()
-    # f = StringIO(prog)
-    # code = pal.assemble(f)
-    # for loc in range(4095):
-    #     if code[loc] is not 0:
-    #         print('%d %o' % (loc,code[loc]))
-    # # for symbol in pal.planter.symbols:
-    # #     print(symbol, pal.planter.symbols[symbol])
-    # pdp8 = PDP8(tracer=PrintingTracer())
-    # pdp8.memory = code
-    # pdp8.run(debugging=True, start=128, stepping=True)
-    # pdp8.run()
-
-    print('%o' % pal.instruction('CLA CLL'))
-
 

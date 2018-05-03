@@ -197,11 +197,11 @@ class PDP8:
     def is_or_group(self, instruction):
         return 0 == instruction & self.BIT8
 
-    def z_bit(self, instruction):
-        return 0 < instruction & 0o0200
+    def z_bit(self):
+        return 0 < self.instruction & 0o0200
 
-    def i_bit(self, instruction):
-        return 0 < instruction & 0o0400
+    def i_bit(self):
+        return 0 < self.instruction & 0o0400
 
     def __setitem__(self, address, contents):
         self.memory[address] = contents & self.W_MASK # only 12 bits stored
@@ -218,31 +218,30 @@ class PDP8:
             self.stepping = stepping
         self.debugging = debugging
         while self.running:
-            instruction = self[self.pc]
-            self.execute(instruction)
+            self.instruction = self[self.pc]
+            self.execute()
 
-    def execute(self, instruction):
+    def execute(self):
         old_pc = self.pc # for debugging
-        op = self.opcode(instruction)
+        op = self.opcode()
         self.pc += 1
-        self.ops[op](self, instruction)
+        self.ops[op](self)
         # if self.debugging:
         #     self.tracer.instruction(old_pc, self.mnemonic_for(instruction), self.accumulator, self.link, self.pc)
         if self.stepping:
             self.running = False
 
-    @classmethod
-    def opcode(cls, instruction):
-        bits = instruction & cls.OP_MASK
-        code = bits >> cls.W_BITS - cls.OP_BITS
+    def opcode(self):
+        bits = self.instruction & self.OP_MASK
+        code = bits >> self.W_BITS - self.OP_BITS
         return code
 
-    def andi(self, instruction):
-        self.accumulator &= self[self.address_for(instruction)]
+    def andi(self):
+        self.accumulator &= self[self.instruction_address()]
 
     # TODO: set carry bit
-    def tad(self, instruction):
-        self.add_12_bits(self[self.address_for(instruction)])
+    def tad(self):
+        self.add_12_bits(self[self.instruction_address()])
 
     def add_12_bits(self, increment):
         self.accumulator += increment
@@ -253,34 +252,42 @@ class PDP8:
         else:
             self.link = 1
 
-    def isz(self, instruction):
-        address = self.address_for(instruction)
+    def isz(self):
+        address = self.instruction_address()
         contents = self[address]
         contents += 1
         self[address] = contents # forces 12-bit value
         if self[address] == 0:
             self.pc += 1 # skip
 
-    def dca(self, instruction):
-        self[self.address_for(instruction)] = self.accumulator
+    def dca(self):
+        self[self.instruction_address()] = self.accumulator
         self.accumulator = 0
 
-    def jmp(self, instruction):
-        self.pc = self.address_for(instruction)
+    def jmp(self):
+        self.pc = self.instruction_address()
 
-    def jms(self, instruction):
-        self[self.address_for(instruction)] = self.pc
-        self.pc = self.address_for(instruction) + 1
+    def jms(self):
+        self[self.instruction_address()] = self.pc
+        self.pc = self.instruction_address() + 1
 
     # TODO: handle variants
-    def iot(self, instruction):
+    def iot(self):
         return self.tape.read(1)
 
-    def opr(self, instruction):
-        if  self.is_group1(instruction):
-            self.group1(instruction)
-        if self.is_group2(instruction):
-            self.group2(instruction)
+    def opr(self):
+        if  self.is_group1(self.instruction):
+            self.group1(self.instruction)
+        if self.is_group2(self.instruction):
+            self.group2(self.instruction)
+
+    def instruction_address(self):
+        o = self.instruction & self.V_MASK
+        if not self.z_bit():
+            o += self.pc & 0o7600
+        if self.i_bit():
+            o = self[o]
+        return o
 
     def cla(self):
         self.accumulator = 0
@@ -330,16 +337,6 @@ class PDP8:
     # def mnemonic_for(self, instruction):
     #     return self.ins.mnemonic_for(instruction)
 
-    def offset(self, instruction):
-        return instruction & self.V_MASK
-
-    def address_for(self, instruction):
-        o = self.offset(instruction)
-        if not self.z_bit(instruction):
-            o += self.pc & 0o7600
-        if self.i_bit(instruction):
-            o = self[o]
-        return o
 
     def group1(self, instruction):
         # sequence 1

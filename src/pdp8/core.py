@@ -1,25 +1,26 @@
-from collections import OrderedDict
 from io import StringIO
-
 from pdp8.tracing import NullTracer
 
-# TODO: move all mnemonic-based stuff into PAL
-
-"""
-(from https://en.wikipedia.org/wiki/PDP-8#Instruction_set)
-    000 – AND – AND the memory operand with AC.
-    001 – TAD – Two's complement ADd the memory operand to <L,AC> (a 12 bit signed value (AC) w. carry in L).
-    010 – ISZ – Increment the memory operand and Skip next instruction if result is Zero.
-    011 – DCA – Deposit AC into the memory operand and Clear AC.
-    100 – JMS – JuMp to Subroutine (storing return address in first word of subroutine!).
-    101 – JMP – JuMP.
-    110 – IOT – Input/Output Transfer (see below).
-    111 – OPR – microcoded OPeRations (see below). 
-"""
 
 
 def octal(string):
     return int(string, 8)
+
+OPR_GROUP1 = octal('0400')
+OPR_GROUP2 = octal('0001')
+CLA1 = octal('0200')
+CLL = octal('0100')
+CMA = octal('0040')
+CML = octal('0020')
+RAR = octal('0010')
+RAL = octal('0004')
+RTR = octal('0012')
+RTL = octal('0006')
+IAC = octal('0001')
+HALT = octal('0002')
+BIT8 = octal('0010')
+Z_BIT = 0o0200
+I_BIT = 0o0400
 
 class PDP8:
     # TODO simplify these, use constants rather than calculating?
@@ -40,28 +41,11 @@ class PDP8:
         self.running = False
         self.debugging = False
         self.stepping = False
-        # self.ins = InstructionSet()
-        self.setup_ops()
         # self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
         # self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
-        self.OPR_GROUP1 = octal('0400')
-        self.OPR_GROUP2 = octal('0001')
-        self.CLA1 = octal('0200')
-        self.CLL = octal('0100')
-        self.CMA = octal('0040')
-        self.CML = octal('0020')
-        self.RAR = octal('0010')
-        self.RAL = octal('0004')
-        self.RTR = octal('0012')
-        self.RTL = octal('0006')
-        self.IAC = octal('0001')
-        self.HALT = octal('0002')
-        self.BIT8 = octal('0010')
         if tracer is None:
             tracer = NullTracer()
         self.tracer = tracer
-
-    def setup_ops(self):
         self.ops =  [PDP8.andi,
                 PDP8.tad,
                 PDP8.isz,
@@ -75,48 +59,26 @@ class PDP8:
         return self.memory[address] & self.W_MASK # only 12 bits retrieved
 
     def is_group1(self):
-        return 0 == self.instruction & self.OPR_GROUP1
+        return 0 == self.i_mask(OPR_GROUP1)
 
-    # TODO: some refactoring here methinks
-    def is_g1(self, mask):
-        return 0 != self.instruction & mask
-
-    def is_cla1(self):
-        return self.is_g1(self.CLA1)
-
-    def is_cll(self):
-        return 0 != self.instruction & self.CLL
-
-    def is_cma(self):
-        return 0 != self.instruction & self.CMA
-
-    def is_cml(self):
-        return 0 != self.instruction & self.CML
-
-    def is_rr(self):
-        return 0 != self.instruction & self.RAR
-
-    def is_rl(self):
-        return 0 != self.instruction & self.RAL
+    def i_mask(self, mask):
+        return self.instruction & mask
 
     def is_iac(self):
-        return 0 != self.instruction & self.IAC
+        return 0 != self.i_mask(IAC)
 
     def is_group2(self):
-        return (not self.is_group1()) and 0 == self.instruction & self.OPR_GROUP2
+        return (not self.is_group1()) and 0 == self.i_mask(OPR_GROUP2)
 
     # Group 2
     def is_halt(self):
-        return 0 != self.instruction & self.HALT
+        return self.i_mask(HALT)
 
     def is_or_group(self):
-        return 0 == self.instruction & self.BIT8
-
-    def z_bit(self):
-        return 0 != self.instruction & 0o0200
+        return not self.i_mask(BIT8)
 
     def i_bit(self):
-        return 0 != self.instruction & 0o0400
+        return self.i_mask(I_BIT)
 
     def __setitem__(self, address, contents):
         self.memory[address] = contents & self.W_MASK # only 12 bits stored
@@ -147,7 +109,7 @@ class PDP8:
             self.running = False
 
     def opcode(self):
-        bits = self.instruction & self.OP_MASK
+        bits = self.i_mask(self.OP_MASK)
         code = bits >> self.W_BITS - self.OP_BITS
         return code
 
@@ -197,10 +159,10 @@ class PDP8:
             self.group2()
 
     def instruction_address(self):
-        o = self.instruction & self.V_MASK
-        if not self.z_bit():
+        o = self.i_mask(self.V_MASK)
+        if not self.i_mask(Z_BIT):
             o += self.pc & 0o7600
-        if self.i_bit():
+        if self.i_mask(I_BIT):
             o = self[o]
         return o
 
@@ -217,7 +179,7 @@ class PDP8:
         self.link = 1-self.link
 
     def rr(self):
-        self.rar(0 < self.instruction & 2)
+        self.rar(0 < self.i_mask(2))
 
     def rar(self, flag):
         count = 2 if flag else 1
@@ -229,7 +191,7 @@ class PDP8:
             self.link = new_link
 
     def rl(self):
-        self.ral(self.instruction & 2)
+        self.ral(self.i_mask(2))
 
     def ral(self, flag):
         count = 2 if flag else 1
@@ -251,27 +213,13 @@ class PDP8:
 
     # def mnemonic_for(self, instruction):
     #     return self.ins.mnemonic_for(instruction)
-    def group1(self):
-        # sequence 1
-        if self.is_g1(self.CLA1):
-            self.cla()
-        if self.is_g1(self.CLL):
-            self.cll()
-        # sequence 2
-        if self.is_g1(self.CMA):
-            self.cma()
-        if self.is_g1(self.CML):
-            self.cml()
-        # sequence 3
-        if self.is_g1(self.IAC):
-            self.iac()
-        # sequence 4
-        if self.is_rr():
-            self.rr()
-        if self.is_rl():
-            self.rl()
 
-    # TODO: move instructionset stuff back into pdp8 and get rid of all these instruction parameters!
+    def group1(self):
+        for (mask, ins) in zip([     CLA1,     CLL,      CMA,      CML,      IAC,     RAR,     RAL],
+                               [self.cla, self.cll, self.cma, self.cml, self.iac,self.rr, self.rl]):
+            if self.i_mask(mask):
+                ins()
+
     def group2(self):
         if self.is_or_group():
             if self.sma() or self.sza() or self.snl():
@@ -280,7 +228,7 @@ class PDP8:
             self.halt()
 
     def sma(self):
-        return self.accumulator & octal('4000') and (self.instruction & octal('0100'))
+        return self.accumulator & octal('4000') and (self.i_mask(octal('0100')))
 
     def sza(self):
         return False

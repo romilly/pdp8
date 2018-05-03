@@ -41,6 +41,7 @@ class PDP8:
         self.running = False
         self.debugging = False
         self.stepping = False
+        self.ia = None
         # self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
         # self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
         if tracer is None:
@@ -95,18 +96,19 @@ class PDP8:
             self.stepping = stepping
         self.debugging = debugging
         while self.running:
-            self.instruction = self[self.pc]
             self.execute()
+            if self.stepping:
+                self.running = False
 
     def execute(self):
         old_pc = self.pc # for debugging
+        self.instruction = self[self.pc]
+        self.ia = self.instruction_address()
         op = self.opcode()
         self.pc += 1
         self.ops[op](self)
         # if self.debugging:
         #     self.tracer.instruction(old_pc, self.mnemonic_for(instruction), self.accumulator, self.link, self.pc)
-        if self.stepping:
-            self.running = False
 
     def opcode(self):
         bits = self.i_mask(self.OP_MASK)
@@ -114,11 +116,11 @@ class PDP8:
         return code
 
     def andi(self):
-        self.accumulator &= self[self.instruction_address()]
+        self.accumulator &= self[self.ia]
 
     # TODO: set carry bit
     def tad(self):
-        self.add_12_bits(self[self.instruction_address()])
+        self.add_12_bits(self[self.ia])
 
     def add_12_bits(self, increment):
         self.accumulator += increment
@@ -130,23 +132,22 @@ class PDP8:
             self.link = 1
 
     def isz(self):
-        address = self.instruction_address()
-        contents = self[address]
+        contents = self[self.ia]
         contents += 1
-        self[address] = contents # forces 12-bit value
-        if self[address] == 0:
-            self.pc += 1 # skip
+        self[self.ia] = contents  # forces 12-bit value
+        if self[self.ia] == 0:
+            self.pc += 1  # skip
 
     def dca(self):
-        self[self.instruction_address()] = self.accumulator
+        self[self.ia] = self.accumulator
         self.accumulator = 0
 
     def jmp(self):
-        self.pc = self.instruction_address()
+        self.pc = self.ia
 
     def jms(self):
-        self[self.instruction_address()] = self.pc
-        self.pc = self.instruction_address() + 1
+        self[self.ia] = self.pc
+        self.pc = self.ia + 1
 
     # TODO: handle variants
     def iot(self):

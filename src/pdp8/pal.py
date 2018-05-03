@@ -1,3 +1,6 @@
+from io import StringIO
+
+from pdp8.core import PDP8, octal
 from reggie.core import *
 
 comma = text(',')
@@ -105,7 +108,7 @@ class Parser:
     # remove comment text
     def decommented_and_trimmed(self, line):
         line = line.split('/')[0]
-        return line.decommented_and_trimmed()
+        return line.strip()
 
 
 class InstructionPlanter():
@@ -153,7 +156,7 @@ class OprParser(Parser):
 
     def build_instruction(self, parsed):
         op = 0
-        codes = parsed['opr'].split(' ')
+        codes = parsed['opr'].split()
         values = g1values if 'group1' in parsed else g2values
         for code in codes:
             code_ = values[code]
@@ -236,3 +239,22 @@ HLT
 0000
 """
 
+mult="""
+START,  CLA CLL
+        TAD 010
+        CMA IAC
+        DCA 012
+        TAD 011
+        ISZ 012
+        JMP 004
+        HLT
+        0022
+        0044
+        0000
+"""
+
+pdp = PDP8()
+pal = Pal()
+pdp.memory = pal.assemble(StringIO(mult))
+pdp.run()
+print(pdp.accumulator)

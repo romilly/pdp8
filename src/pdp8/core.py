@@ -24,7 +24,6 @@ I_BIT = 0o0400
 
 class PDP8:
     # TODO simplify these, use constants rather than calculating?
-    # and add I, Z
     W_BITS = 12                 # number of bits in a word
     W_MASK = 2 ** W_BITS - 1    # word mask
     OP_BITS = 3                 # 3 bits in the opcode
@@ -47,14 +46,14 @@ class PDP8:
         if tracer is None:
             tracer = NullTracer()
         self.tracer = tracer
-        self.ops =  [PDP8.andi,
-                PDP8.tad,
-                PDP8.isz,
-                PDP8.dca,
-                PDP8.jms,
-                PDP8.jmp,
-                PDP8.iot,
-                PDP8.opr]
+        self.ops =  [self.andi,
+                     self.tad,
+                     self.isz,
+                     self.dca,
+                     self.jms,
+                     self.jmp,
+                     self.iot,
+                     self.opr]
 
     def __getitem__(self, address):
         return self.memory[address] & self.W_MASK # only 12 bits retrieved
@@ -75,11 +74,6 @@ class PDP8:
     def is_halt(self):
         return self.i_mask(HALT)
 
-    def is_or_group(self):
-        return not self.i_mask(BIT8)
-
-    def i_bit(self):
-        return self.i_mask(I_BIT)
 
     def __setitem__(self, address, contents):
         self.memory[address] = contents & self.W_MASK # only 12 bits stored
@@ -106,7 +100,7 @@ class PDP8:
         self.ia = self.instruction_address()
         op = self.opcode()
         self.pc += 1
-        self.ops[op](self)
+        self.ops[op]()
         # if self.debugging:
         #     self.tracer.instruction(old_pc, self.mnemonic_for(instruction), self.accumulator, self.link, self.pc)
 
@@ -118,7 +112,6 @@ class PDP8:
     def andi(self):
         self.accumulator &= self[self.ia]
 
-    # TODO: set carry bit
     def tad(self):
         self.add_12_bits(self[self.ia])
 
@@ -221,10 +214,20 @@ class PDP8:
             if self.i_mask(mask):
                 ins()
 
+    def is_or_group(self):
+        return not self.i_mask(BIT8)
+
+    def is_and_group(self):
+        return self.i_mask(BIT8)
+
     def group2(self):
-        if self.is_or_group():
-            if self.sma() or self.sza() or self.snl():
+        if self.is_or_group() and (self.sma() or self.sza() or self.snl()):
                 self.pc += 1
+
+        if self.is_and_group() and self.spa() and self.sna() and self.szl():
+                self.pc += 1
+
+
         if self.is_halt():
             self.halt()
 
@@ -232,10 +235,20 @@ class PDP8:
         return self.accumulator & octal('4000') and (self.i_mask(octal('0100')))
 
     def sza(self):
-        return False
+        return self.accumulator == 0 and (self.i_mask(octal('0040')))
 
-    def snl(selfn):
-        return False
+    def snl(self):
+        return self.link == 1 and (self.i_mask(octal('0020')))
+
+    def spa(self):
+        pass
+
+    def sna(self):
+        pass
+
+    def szl(self):
+        pass
+
 
 
 

@@ -16,95 +16,10 @@ from pdp8.tracing import NullTracer
     110 – IOT – Input/Output Transfer (see below).
     111 – OPR – microcoded OPeRations (see below). 
 """
-#
-# mri_values = {
-# #                Octal     Memory
-# # Mnemonic(2)    Value     Cycles(1) Instruction
-# 'AND':           0o0000, # 2         Logical AND
-# 'TAD':           0o1000, # 2         Two's Complement Add
-# 'ISZ':           0o2000, # 2         Increment and Skip if Zero
-# 'DCA':           0o3000, # 2         Deposit and Clear the Accumulator
-# 'JMS':           0o4000, # 2         Jump to Subroutine
-# 'JMP':           0o5000, # 1         Jump
-# }
+
 
 def octal(string):
     return int(string, 8)
-
-
-# class InstructionSet():
-#     def __init__(self):
-#         self.setup_ops()
-#         # self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
-#         # self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
-#         self.OPR_GROUP1 = octal('0400')
-#         self.OPR_GROUP2 = octal('0001')
-#         self.CLA1 = octal('0200')
-#         self.CLL =  octal('0100')
-#         self.CMA =  octal('0040')
-#         self.CML =  octal('0020')
-#         self.RAR =  octal('0010')
-#         self.RAL =  octal('0004')
-#         self.RTR =  octal('0012')
-#         self.RTL =  octal('0006')
-#         self.IAC =  octal('0001')
-#         self.HALT = octal('0002')
-#         self.BIT8 = octal('0010')
-#
-#     def setup_ops(self):
-#         self.ops =  [PDP8.andi,
-#                 PDP8.tad,
-#                 PDP8.isz,
-#                 PDP8.dca,
-#                 PDP8.jms,
-#                 PDP8.jmp,
-#                 PDP8.iot,
-#                 PDP8.opr]
-#
-#
-#
-#     def is_group1(self, instruction):
-#         return 0 == instruction & self.OPR_GROUP1
-#
-#     # TODO: some refactoring here methinks
-#     def is_g1(self, instruction, mask):
-#         return 0 != instruction & mask
-#
-#     def is_cla1(self, instruction):
-#         return self.is_g1(instruction, self.CLA1)
-#
-#     def is_cll(self, instruction):
-#         return 0 != instruction & self.CLL
-#
-#     def is_cma(self, instruction):
-#         return 0 != instruction & self.CMA
-#
-#     def is_cml(self, instruction):
-#         return 0 != instruction & self.CML
-#
-#     def is_rr(self, instruction):
-#         return 0 != instruction & self.RAR
-#
-#     def is_rl(self, instruction):
-#         return 0 != instruction & self.RAL
-#
-#     def is_iac(self, instruction):
-#         return 0 != instruction & self.IAC
-#
-#     def is_group2(self, instruction):
-#         return (not self.is_group1(instruction)) and 0 == instruction & self.OPR_GROUP2
-#
-#
-#     # Group 2
-#     def is_halt(self, instruction):
-#         return 0 != instruction & self.HALT
-#
-#     def is_or_group(self, instruction):
-#         return 0 == instruction & self.BIT8
-
-    # def mnemonic_for(self, instruction):
-    #     code = PDP8.opcode(instruction)
-    #     return self.mnemonics[code] if code < len(self.mnemonics) else '**'
 
 class PDP8:
     # TODO simplify these, use constants rather than calculating?
@@ -159,49 +74,49 @@ class PDP8:
     def __getitem__(self, address):
         return self.memory[address] & self.W_MASK # only 12 bits retrieved
 
-    def is_group1(self, instruction):
-        return 0 == instruction & self.OPR_GROUP1
+    def is_group1(self):
+        return 0 == self.instruction & self.OPR_GROUP1
 
     # TODO: some refactoring here methinks
-    def is_g1(self, instruction, mask):
-        return 0 != instruction & mask
+    def is_g1(self, mask):
+        return 0 != self.instruction & mask
 
-    def is_cla1(self, instruction):
-        return self.is_g1(instruction, self.CLA1)
+    def is_cla1(self):
+        return self.is_g1(self.CLA1)
 
-    def is_cll(self, instruction):
-        return 0 != instruction & self.CLL
+    def is_cll(self):
+        return 0 != self.instruction & self.CLL
 
-    def is_cma(self, instruction):
-        return 0 != instruction & self.CMA
+    def is_cma(self):
+        return 0 != self.instruction & self.CMA
 
-    def is_cml(self, instruction):
-        return 0 != instruction & self.CML
+    def is_cml(self):
+        return 0 != self.instruction & self.CML
 
-    def is_rr(self, instruction):
-        return 0 != instruction & self.RAR
+    def is_rr(self):
+        return 0 != self.instruction & self.RAR
 
-    def is_rl(self, instruction):
-        return 0 != instruction & self.RAL
+    def is_rl(self):
+        return 0 != self.instruction & self.RAL
 
-    def is_iac(self, instruction):
-        return 0 != instruction & self.IAC
+    def is_iac(self):
+        return 0 != self.instruction & self.IAC
 
-    def is_group2(self, instruction):
-        return (not self.is_group1(instruction)) and 0 == instruction & self.OPR_GROUP2
+    def is_group2(self):
+        return (not self.is_group1()) and 0 == self.instruction & self.OPR_GROUP2
 
     # Group 2
-    def is_halt(self, instruction):
-        return 0 != instruction & self.HALT
+    def is_halt(self):
+        return 0 != self.instruction & self.HALT
 
-    def is_or_group(self, instruction):
-        return 0 == instruction & self.BIT8
+    def is_or_group(self):
+        return 0 == self.instruction & self.BIT8
 
     def z_bit(self):
-        return 0 < self.instruction & 0o0200
+        return 0 != self.instruction & 0o0200
 
     def i_bit(self):
-        return 0 < self.instruction & 0o0400
+        return 0 != self.instruction & 0o0400
 
     def __setitem__(self, address, contents):
         self.memory[address] = contents & self.W_MASK # only 12 bits stored
@@ -276,10 +191,10 @@ class PDP8:
         return self.tape.read(1)
 
     def opr(self):
-        if  self.is_group1(self.instruction):
-            self.group1(self.instruction)
-        if self.is_group2(self.instruction):
-            self.group2(self.instruction)
+        if  self.is_group1():
+            self.group1()
+        if self.is_group2():
+            self.group2()
 
     def instruction_address(self):
         o = self.instruction & self.V_MASK
@@ -301,8 +216,8 @@ class PDP8:
     def cml(self):
         self.link = 1-self.link
 
-    def rr(self, instruction):
-        self.rar(0 < instruction & 2)
+    def rr(self):
+        self.rar(0 < self.instruction & 2)
 
     def rar(self, flag):
         count = 2 if flag else 1
@@ -313,8 +228,8 @@ class PDP8:
                 self.accumulator |= 0o4000
             self.link = new_link
 
-    def rl(self, instruction):
-        self.ral(instruction & 2)
+    def rl(self):
+        self.ral(self.instruction & 2)
 
     def ral(self, flag):
         count = 2 if flag else 1
@@ -336,43 +251,41 @@ class PDP8:
 
     # def mnemonic_for(self, instruction):
     #     return self.ins.mnemonic_for(instruction)
-
-
-    def group1(self, instruction):
+    def group1(self):
         # sequence 1
-        if self.is_cla1(instruction):
+        if self.is_g1(self.CLA1):
             self.cla()
-        if self.is_cll(instruction):
+        if self.is_g1(self.CLL):
             self.cll()
         # sequence 2
-        if self.is_cma(instruction):
+        if self.is_g1(self.CMA):
             self.cma()
-        if self.is_cml(instruction):
+        if self.is_g1(self.CML):
             self.cml()
         # sequence 3
-        if self.is_iac(instruction):
+        if self.is_g1(self.IAC):
             self.iac()
         # sequence 4
-        if self.is_rr(instruction):
-            self.rr(instruction)
-        if self.is_rl(instruction):
-            self.rl(instruction)
+        if self.is_rr():
+            self.rr()
+        if self.is_rl():
+            self.rl()
 
     # TODO: move instructionset stuff back into pdp8 and get rid of all these instruction parameters!
-    def group2(self, instruction):
-        if self.is_or_group(instruction):
-            if self.sma(instruction) or self.sza(instruction) or self.snl(instruction):
+    def group2(self):
+        if self.is_or_group():
+            if self.sma() or self.sza() or self.snl():
                 self.pc += 1
-        if self.is_halt(instruction):
+        if self.is_halt():
             self.halt()
 
-    def sma(self, instruction):
-        return self.accumulator & octal('4000') and (instruction & octal('0100'))
+    def sma(self):
+        return self.accumulator & octal('4000') and (self.instruction & octal('0100'))
 
-    def sza(self, instruction):
+    def sza(self):
         return False
 
-    def snl(self, instruction):
+    def snl(selfn):
         return False
 
 

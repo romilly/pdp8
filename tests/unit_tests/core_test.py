@@ -344,6 +344,24 @@ class OprGroup2Test(AbstractCodeTest):
         self.pdp.run(stepping=True)
         self.check(pc=2)
 
+    def test_spa(self):
+        self.pdp.accumulator = 1
+        self.pdp.memory[0] = self.instruction('SPA')
+        self.pdp.run(stepping=True)
+        self.check(pc=2)
+
+    def test_sna(self):
+        self.pdp.accumulator = 1
+        self.pdp.memory[0] = self.instruction('SNA')
+        self.pdp.run(stepping=True)
+        self.check(pc=2)
+
+    def test_szl(self):
+        self.pdp.accumulator = 1
+        self.pdp.memory[0] = self.instruction('SZL')
+        self.pdp.run(stepping=True)
+        self.check(pc=2)
+
 
 
 

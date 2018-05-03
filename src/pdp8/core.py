@@ -232,7 +232,10 @@ class PDP8:
             self.halt()
 
     def sma(self):
-        return self.accumulator & octal('4000') and (self.i_mask(octal('0100')))
+        return self.accumulator_is_negative() and (self.i_mask(octal('0100')))
+
+    def accumulator_is_negative(self):
+        return self.accumulator & octal('4000')
 
     def sza(self):
         return self.accumulator == 0 and (self.i_mask(octal('0040')))
@@ -241,15 +244,16 @@ class PDP8:
         return self.link == 1 and (self.i_mask(octal('0020')))
 
     def spa(self):
-        pass
+        return self.accumulator_is_positive() or not (self.i_mask(octal('0100')))
+
+    def accumulator_is_positive(self):
+        return not self.accumulator_is_negative()
 
     def sna(self):
-        pass
+        return self.accumulator != 0 or not (self.i_mask(octal('0040')))
 
     def szl(self):
-        pass
-
-
+        return self.link == 0 or not (self.i_mask(octal('0020')))
 
 
 

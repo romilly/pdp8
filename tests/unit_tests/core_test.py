@@ -327,9 +327,15 @@ class OprGroup2Test(AbstractCodeTest):
 
     def test_sma(self):
         self.pdp.accumulator = octal('7777') # -1
-        self.pdp.memory[0] = self.instruction('SMA') #
+        self.pdp.memory[0] = self.instruction('SMA')
         self.pdp.run(stepping=True)
         self.check(pc=2)
+
+    # def test_sza(self):
+    #     self.pdp.accumulator = 0
+    #     self.pdp.memory[0] = self.instruction('SZA')
+    #     self.pdp.run(stepping=True)
+    #     self.check(pc=2)
 
 
 

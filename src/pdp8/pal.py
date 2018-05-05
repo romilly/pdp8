@@ -10,7 +10,7 @@ from reggie.core import *
 # TODO: allow OCTAL, DECIMAL to set base
 
 label = optional(name(identifier,'label') + comma + spaces)
-offset = spaces + name(one_of(digits ,identifier), 'offset')
+offset = spaces + name(one_of(digits ,name(identifier,'expr')), 'offset')
 i = osp + name(optional('I'),'I')
 z = osp + name(optional('Z'),'Z')
 mri = name(one_of('AND', 'TAD', 'ISZ', 'DCA', 'JMS', 'JMP'),'mri')
@@ -145,7 +145,10 @@ class MriParser(Parser):
     def build_instruction(self, parsed):
         op = mri_values[parsed['mri']]
         # TODO: handle relative addresses for code not in page 0
-        offset = int(parsed['offset'], self.base)
+        if 'expr' in parsed:
+            offset = self.planter.symbols[parsed['expr']]
+        else:
+            offset = int(parsed['offset'], self.base)
         if offset < octal('200'):
             parsed['Z'] = 'Z' # force PAGE 0
         offset_page = offset & octal('7400')
@@ -241,31 +244,18 @@ prog = """
 / Multiply
 *200 /start at octal 200
 START,  CLA CLL
-        TAD 210
+        TAD A
         CMA IAC
         DCA 212
-        TAD 211
-        ISZ 212
-        JMP 204
+MULT,   TAD B
+        ISZ TALLY
+        JMP MULT
         HLT
 A,      0022
 B,      0044
 TALLY,  0000
 """
 
-mult="""
-START,  CLA CLL
-        TAD 010
-        CMA IAC
-        DCA 012
-        TAD 011
-        ISZ 012
-        JMP 004
-        HLT
-        0022
-        0044
-        0000
-"""
 
 pdp = PDP8()
 pal = Pal()

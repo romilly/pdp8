@@ -8,6 +8,8 @@ from pdp8.pal import Pal
 from pdp8.tracing import NullTracer, HaltTracer
 from tests.helpers.checker import ConfigChecker
 
+# TODO: Add tests (and then code) for AutoIndexing
+
 class AbstractCodeTest(TestCase):
     __metaclass__ = ABCMeta
 

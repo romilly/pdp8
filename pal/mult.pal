@@ -1,12 +1,13 @@
 *200
 START,  CLA CLL
-        TAD 210
+        TAD A
         CIA
         DCA 212
-MULT,   TAD 211
-        ISZ 212
-        JMP 204
+MULT,   TAD B
+        ISZ TALLY
+        JMP MULT
         HLT
-        0022
-        0044
-        0000
+A,      0022
+B,      0044
+TALLY,  0000
+$

@@ -1,20 +1,23 @@
+from abc import abstractmethod, ABCMeta
 from io import StringIO
 
 from pdp8.core import PDP8, octal
 from reggie.core import *
 
-comma = text(',')
-star = text('*')
 
-label = (optional(identifier.called('label') + comma + space))
-offset = (space + (digits | identifier).called('offset'))
-i = (osp + optional(text('I').called('I')))
-z = (osp + optional(text('Z').called('Z')))
-mri = texts('AND', 'TAD', 'ISZ', 'DCA', 'JMS', 'JMP').called('mri')
-g1 =  multiple(osp+texts('NOP', 'CLA', 'CLL', 'CMA', 'CML', 'RAR', 'RAL', 'RTR', 'RTL', 'IAC')).called('group1')
-g2 =  multiple(osp+texts('CLA', 'HLT', 'OSR', 'SKP', 'SMA', 'SNA', 'SNL', 'SPA', 'SZA', 'SZL')).called('group2')
-opr = (g1 | g2).called('opr')
-org = (star + digits.called('org'))
+
+# TODO:Handle expressions
+# TODO: allow OCTAL, DECIMAL to set base
+
+label = optional(name(identifier,'label') + comma + spaces)
+offset = spaces + name(one_of(digits ,identifier), 'offset')
+i = osp + name(optional('I'),'I')
+z = osp + name(optional('Z'),'Z')
+mri = name(one_of('AND', 'TAD', 'ISZ', 'DCA', 'JMS', 'JMP'),'mri')
+g1 =  name(multiple(osp+one_of('NOP', 'CLA', 'CLL', 'CMA', 'CML', 'RAR', 'RAL', 'RTR', 'RTL', 'IAC')),'group1')
+g2 =  name(multiple(osp+one_of('CLA', 'HLT', 'OSR', 'SKP', 'SMA', 'SNA', 'SNL', 'SPA', 'SZA', 'SZL')),'group2')
+opr = name(one_of(g1, g2),'opr')
+org = escape('*') + name(digits,'org')
 
 
 mri_values = {
@@ -81,8 +84,7 @@ class Parser:
                 self.parse_line(line)
 
     def match(self, line, statement):
-        return statement.matches(line)
-
+        return match(statement, line)
 
     def parse_line(self, line):
         statement = self.match(line, self.syntax)
@@ -138,15 +140,24 @@ class InstructionPlanter():
 
 class MriParser(Parser):
     def __init__(self, planter):
-        Parser.__init__(self, label+mri+i+z+offset, planter)
+        Parser.__init__(self, name(label+mri+i+z+offset, 'line'), planter)
 
     def build_instruction(self, parsed):
         op = mri_values[parsed['mri']]
-        if 'I' in parsed:
-            op |= 0o0400
+        # TODO: handle relative addresses for code not in page 0
+        offset = int(parsed['offset'], self.base)
+        if offset < octal('200'):
+            parsed['Z'] = 'Z' # force PAGE 0
+        offset_page = offset & octal('7400')
+        here_page = self.planter.ic & octal('7400')
+        if here_page != offset_page:
+            raise Exception('%s offset refers to asn inaccessible page')
+        offset = offset & octal('177')
+        op |= offset
         if 'Z' in parsed:
             op |= 0o0200
-        op |= int(parsed['offset'], self.base)
+        if 'I' in parsed:
+            op |= 0o0400
         return op
 
 
@@ -177,7 +188,7 @@ class Org(Parser):
 
 class ConstParser(Parser):
     def __init__(self, planter):
-        Parser.__init__(self, digits.called('digits'), planter)
+        Parser.__init__(self, label+name(digits,'digits'), planter)
 
     def build_instruction(self, parsed):
         return int(parsed['digits'],self.base)
@@ -227,16 +238,19 @@ class Pal():
 
 
 prog = """
-/ Comment
+/ Multiply
 *200 /start at octal 200
-START, CLA
-/TAD 0205
-/TAD 0206
-/DCA 0207
-HLT
-1537 / constants
-2241
-0000
+START,  CLA CLL
+        TAD 210
+        CMA IAC
+        DCA 212
+        TAD 211
+        ISZ 212
+        JMP 204
+        HLT
+A,      0022
+B,      0044
+TALLY,  0000
 """
 
 mult="""
@@ -255,6 +269,7 @@ START,  CLA CLL
 
 pdp = PDP8()
 pal = Pal()
-pdp.memory = pal.assemble(StringIO(mult))
+pdp.memory = pal.assemble(StringIO(prog))
 pdp.run()
 print(pdp.accumulator)
+# print(label)

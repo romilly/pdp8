@@ -2,9 +2,9 @@ from io import StringIO
 from pdp8.tracing import NullTracer
 
 
-
 def octal(string):
     return int(string, 8)
+
 
 OPR_GROUP1 = octal('0400')
 OPR_GROUP2 = octal('0001')
@@ -21,6 +21,7 @@ HALT = octal('0002')
 BIT8 = octal('0010')
 Z_BIT = 0o0200
 I_BIT = 0o0400
+
 
 class PDP8:
     # TODO simplify these, use constants rather than calculating?
@@ -41,22 +42,24 @@ class PDP8:
         self.debugging = False
         self.stepping = False
         self.ia = None
+        self.instruction = None
+        self.tape = StringIO('')
         # self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
         # self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
         if tracer is None:
             tracer = NullTracer()
         self.tracer = tracer
-        self.ops =  [self.andi,
-                     self.tad,
-                     self.isz,
-                     self.dca,
-                     self.jms,
-                     self.jmp,
-                     self.iot,
-                     self.opr]
+        self.ops = [self.andi,
+                    self.tad,
+                    self.isz,
+                    self.dca,
+                    self.jms,
+                    self.jmp,
+                    self.iot,
+                    self.opr]
 
     def __getitem__(self, address):
-        return self.memory[address] & self.W_MASK # only 12 bits retrieved
+        return self.memory[address] & self.W_MASK   # only 12 bits retrieved
 
     def is_group1(self):
         return 0 == self.i_mask(OPR_GROUP1)
@@ -74,9 +77,8 @@ class PDP8:
     def is_halt(self):
         return self.i_mask(HALT)
 
-
     def __setitem__(self, address, contents):
-        self.memory[address] = contents & self.W_MASK # only 12 bits stored
+        self.memory[address] = contents & self.W_MASK  # only 12 bits stored
         if self.debugging:
             self.tracer.setting(address, contents)
 
@@ -95,7 +97,7 @@ class PDP8:
                 self.running = False
 
     def execute(self):
-        old_pc = self.pc # for debugging
+        # old_pc = self.pc  # for debugging
         self.instruction = self[self.pc]
         self.ia = self.instruction_address()
         op = self.opcode()
@@ -147,7 +149,7 @@ class PDP8:
         return self.tape.read(1)
 
     def opr(self):
-        if  self.is_group1():
+        if self.is_group1():
             self.group1()
         if self.is_group2():
             self.group2()
@@ -223,11 +225,8 @@ class PDP8:
     def group2(self):
         if self.is_or_group() and (self.sma() or self.sza() or self.snl()):
                 self.pc += 1
-
         if self.is_and_group() and self.spa() and self.sna() and self.szl():
                 self.pc += 1
-
-
         if self.is_halt():
             self.halt()
 
@@ -254,7 +253,3 @@ class PDP8:
 
     def szl(self):
         return self.link == 0 or not (self.i_mask(octal('0020')))
-
-
-
-

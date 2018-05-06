@@ -16,10 +16,10 @@ class AbstractCodeTest(TestCase):
     def setUp(self):
         self.pdp = PDP8()
         self.checker = PDPChecker(self.pdp)
-        self.pal = Pal()
+        self.pal = Pal(self.pdp)
 
-    def instruction(self, text):
-        return self.pal.instruction(text)
+    def instruction(self, text, location=0):
+        return self.pal.instruction(text, location)
 
     def check(self, memory=None, pc=None, accumulator=None, link=None):
         self.checker.check(memory, pc, accumulator, link)
@@ -75,7 +75,7 @@ class MriTest(AbstractCodeTest):
         self.check(memory={2:1}, pc=3)
 
     def test_jmp(self):
-        self.pdp.memory[0] = self.pal.instruction('JMP 2')
+        self.pdp.memory[0] = self.instruction('JMP 2')
         self.pdp.run(stepping=True)
         self.check(pc=2)
 
@@ -89,21 +89,21 @@ class MriTest(AbstractCodeTest):
 
     def test_p_zero_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('AND Z 2')
+        self.pdp.memory[octal('200')] = self.instruction('AND Z 2', octal('200'))
         self.pdp.memory[2] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.check(accumulator=4)
 
     def test_page_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('AND 2') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('AND 202') # in page 1
         self.pdp.memory[octal('202')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.check(accumulator=4)
 
     def test_indirect_and_page_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('AND I 2') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('AND I 202') # in page 1
         self.pdp.memory[octal('202')] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
@@ -111,7 +111,7 @@ class MriTest(AbstractCodeTest):
 
     def test_indirect_and_zero_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('AND I Z 2') # 2 in page 0
+        self.pdp.memory[octal('200')] = self.instruction('AND I 2') # 2 in page 0
         self.pdp.memory[2] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
@@ -119,7 +119,7 @@ class MriTest(AbstractCodeTest):
 
     def test_indirection_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[0] = self.pal.instruction('DCA I 2')
+        self.pdp.memory[0] = self.instruction('DCA I 2')
         self.pdp.memory[2] = 3
         self.pdp.memory[3] = 4
         self.pdp.run(stepping=True)
@@ -134,14 +134,14 @@ class MriTest(AbstractCodeTest):
 
     def test_page_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('DCA 2') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('DCA 202') # in page 1
         self.pdp.memory[octal('202')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.check(memory={octal('202'):7}, accumulator=0)
 
     def test_indirect_and_page_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('DCA I 2') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('DCA I 202', octal('200')) # in page 1
         self.pdp.memory[octal('202')] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
@@ -149,21 +149,18 @@ class MriTest(AbstractCodeTest):
 
     def test_indirect_and_zero_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('DCA I Z 2') # 2 in page 0
+        self.pdp.memory[octal('200')] = self.instruction('DCA I Z 202') # 2 in page 0
         self.pdp.memory[2] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.checker.check(memory={octal('203'):7}, accumulator=0)
 
 
-class OprGroup1Test(TestCase):
+class OprGroup1Test(AbstractCodeTest):
     def setUp(self):
         self.pdp = PDP8()
         self.checker = PDPChecker(self.pdp)
-        self.pal = Pal()
-
-    def instruction(self, text):
-        return self.pal.instruction(text)
+        self.pal = Pal(self.pdp)
 
     def check(self, memory=None, pc=None, accumulator=None, link=None):
         self.checker.check(memory, pc, accumulator, link)

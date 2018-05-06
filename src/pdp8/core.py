@@ -151,13 +151,15 @@ class PDP8:
     def iot(self):
         return self.tape.read(1)
 
-    # TODO: ettor if not g1, g2
+    # TODO: error if not g1, g2
     def opr(self):
         if self.is_group1():
             self.group1()
             return
         if self.is_group2():
             self.group2()
+            return
+        raise ValueError('Unknown opcode in instruction 0o%o at %d(%o)' % (self.instruction, self.pc-1, self.pc-1) )
 
     def instruction_address(self):
         o = self.i_mask(self.V_MASK)

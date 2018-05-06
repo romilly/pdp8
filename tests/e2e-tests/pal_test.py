@@ -28,3 +28,8 @@ class PalTest(TestCase):
         self.pal.assemble(StringIO(read('mul-sub.pal')), list_symbols=True)
         self.pdp8.run(start=octal('200'), debugging=True)
         self.checker.check({136:6})
+
+    def test_assembles_hw(self):
+        self.pal.assemble(StringIO(read('hello.pal')), list_symbols=True)
+        self.pdp8.run(start=octal('200'), debugging=True)
+        # self.checker.check({136:6})

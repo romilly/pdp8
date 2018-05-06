@@ -249,10 +249,11 @@ class Pal():
                                   ExprParser(self.planter)
                                   ).build()
 
-    def instruction(self, string):
+    def instruction(self, string, location):
         self.planter.reset()
+        self.planter.ic = location
         self.pass2.parse_line(string)
-        return self.planter.code[0]
+        return self.planter.code[location]
 
     def assemble(self, file_like, list_symbols=False):
         self.planter.reset()

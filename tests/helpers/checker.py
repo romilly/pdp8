@@ -20,7 +20,7 @@ def memory_contains(address, contents):
     return AddressMatcher(address, contents)
 
 
-class ConfigChecker(object):
+class PDPChecker(object):
     def __init__(self, pdp8):
        self.pdp8 = pdp8
 

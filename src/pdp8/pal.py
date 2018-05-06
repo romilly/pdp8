@@ -1,16 +1,23 @@
 from abc import abstractmethod, ABCMeta
 from io import StringIO
+from operator import add, sub
 
 from pdp8.core import PDP8, octal
+from pdp8.tracing import PrintingTracer
 from reggie.core import *
 
 
 
-# TODO:Handle expressions
 # TODO: allow OCTAL, DECIMAL to set base
 
 label = optional(name(identifier,'label') + comma + spaces)
-offset = spaces + name(one_of(digits ,name(identifier,'expr')), 'offset')
+loc = escape('.')
+minus = '-'
+value1 = one_of(digits, name(identifier, 'id1'), name(loc, 'loc'))
+value2 = one_of(digits, name(identifier, 'id2'))
+function = name(one_of(plus, minus),'function')
+expression = name(value1, 'value1') + optional(osp + function + osp + name(value2,'value2'))
+offset = name(expression, 'offset')
 i = osp + name(optional('I'),'I')
 z = osp + name(optional('Z'),'Z')
 mri = name(one_of('AND', 'TAD', 'ISZ', 'DCA', 'JMS', 'JMP'),'mri')
@@ -58,7 +65,7 @@ g2values = {
 'SNL':      0o7420, # Skip on nonzero link                1
 'SZL':      0o7430, # Skip on zero link                   1
 'SKP':      0o7410, # Skip unconditionally                1
-'OSR':      0o7404, # Inclusive OR switch register       3
+'OSR':      0o7404, # Inclusive OR switch register        3
 #                    with AC
 'HLT':      0o7402, # Halts the program                   3
 }
@@ -91,16 +98,15 @@ class Parser:
         if statement is None:
             self.pass_the_buck(line)
         else:
-            self.plant(statement)
+            self.plant(statement, line)
 
     # need to over-ride for org, 'cos it does not generate an instruction
-    def plant(self, parsed):
-        self.planter.plant(self.build_instruction(parsed))
-
+    def plant(self, parsed, line):
+        self.planter.plant(self.build_instruction(parsed), line)
 
     def pass_the_buck(self, line):
         if self.successor is None:
-            raise(ValueError('line %s does not match my syntax' % line))
+            raise(ValueError('I cannot recognise line %s' % line))
         self.successor.parse_line(line)
 
     @abstractmethod
@@ -112,6 +118,23 @@ class Parser:
         line = line.split('/')[0]
         return line.strip()
 
+    def evaluate_offset(self, parsed):
+        op = sub if 'function' in parsed and parsed['function'] == '-' else add
+        v1 = self.evaluate_term(1, parsed)
+        v2 = self.evaluate_term(2, parsed)
+        return op(v1,v2)
+
+    def evaluate_term(self, num, parsed):
+        v = 'value%d' % num
+        if v not in parsed:
+            return 0
+        if num == 1 and 'loc' in parsed:
+            return self.planter.ic
+        t = 'id%d' % num
+        if t in parsed:
+            return self.planter.symbols[parsed[t]]
+        return int(parsed[v], self.base)
+
 
 class InstructionPlanter():
     def __init__(self):
@@ -121,9 +144,11 @@ class InstructionPlanter():
         self.code = 4096 * [0]
         self.ic = 0
         self.symbols = {}
+        self.source = {}
 
-    def plant(self, instruction):
+    def plant(self, instruction, line):
         self.code[self.ic] = instruction
+        self.source[self.ic] = line
         self.ic += 1
 
     def org(self, location):
@@ -140,21 +165,17 @@ class InstructionPlanter():
 
 class MriParser(Parser):
     def __init__(self, planter):
-        Parser.__init__(self, name(label+mri+i+z+offset, 'line'), planter)
+        Parser.__init__(self, name(label+mri+i+z+spaces+offset, 'line'), planter)
 
     def build_instruction(self, parsed):
         op = mri_values[parsed['mri']]
-        # TODO: handle relative addresses for code not in page 0
-        if 'expr' in parsed:
-            offset = self.planter.symbols[parsed['expr']]
-        else:
-            offset = int(parsed['offset'], self.base)
+        offset = self.evaluate_offset(parsed)
         if offset < octal('200'):
             parsed['Z'] = 'Z' # force PAGE 0
         offset_page = offset & octal('7400')
         here_page = self.planter.ic & octal('7400')
         if here_page != offset_page:
-            raise Exception('%s offset refers to asn inaccessible page')
+            raise Exception('%s offset refers to an inaccessible page' % parsed['line'])
         offset = offset & octal('177')
         op |= offset
         if 'Z' in parsed:
@@ -182,29 +203,29 @@ class Org(Parser):
     def __init__(self, planter):
         Parser.__init__(self, org, planter)
 
-    def plant(self, parsed):
+    def plant(self, parsed, line):
         self.planter.org(int(parsed['org'],self.base))
 
     def build_instruction(self, parsed):
         pass
 
 
-class ConstParser(Parser):
+class ExprParser(Parser):
     def __init__(self, planter):
-        Parser.__init__(self, label+name(digits,'digits'), planter)
+        Parser.__init__(self, label+osp+offset, planter)
 
     def build_instruction(self, parsed):
-        return int(parsed['digits'],self.base)
+        return self.evaluate_offset(parsed)
 
 
 class LabelParser(Parser):
     def __init__(self, planter):
         Parser.__init__(self, label + characters, planter)
 
-    def plant(self, parsed):
+    def plant(self, parsed, line):
         if 'label' in parsed:
             self.planter.define(parsed['label'])
-        self.planter.plant(0)
+        self.planter.plant(0, line)
 
 
 class ChainBuilder():
@@ -218,48 +239,30 @@ class ChainBuilder():
 
 
 class Pal():
-    def __init__(self):
+    def __init__(self, pdp8):
+        self.pdp8 = pdp8
         self.planter = InstructionPlanter()
         self.pass1 = ChainBuilder(Org(self.planter), LabelParser(self.planter)).build()
         self.pass2 = ChainBuilder(MriParser(self.planter),
                                   OprParser(self.planter),
                                   Org(self.planter),
-                                  ConstParser(self.planter)).build()
+                                  ExprParser(self.planter)
+                                  ).build()
 
     def instruction(self, string):
         self.planter.reset()
         self.pass2.parse_line(string)
         return self.planter.code[0]
 
-    def assemble(self, file_like):
+    def assemble(self, file_like, list_symbols=False):
         self.planter.reset()
         self.pass1.parse(file_like)
+        if list_symbols:
+            symbols = self.planter.symbols
+            for key in symbols:
+                print('%8s = %4d (%4o)' % (key, symbols[key], symbols[key]))
         file_like.seek(0)
         self.planter.ic = 0
         self.pass2.parse(file_like)
-        return self.planter.code
-
-
-prog = """
-/ Multiply
-*200 /start at octal 200
-START,  CLA CLL
-        TAD A
-        CMA IAC
-        DCA 212
-MULT,   TAD B
-        ISZ TALLY
-        JMP MULT
-        HLT
-A,      0022
-B,      0044
-TALLY,  0000
-"""
-
-
-pdp = PDP8()
-pal = Pal()
-pdp.memory = pal.assemble(StringIO(prog))
-pdp.run()
-print(pdp.accumulator)
-# print(label)
+        self.pdp8.memory = self.planter.code
+        self.pdp8.tracer = PrintingTracer(self.planter.source)

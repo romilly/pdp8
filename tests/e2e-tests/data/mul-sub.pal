@@ -1,0 +1,26 @@
+/ FROM INTRO TO PROGRAMMING (1969) p 3-18
+*200
+START,      CLA CLL
+            TAD A
+            DCA MCAND / was .+3
+            TAD B
+            JMS I 30
+MCAND,      0000
+            DCA PRODUCT
+            HLT
+PRODUCT,    0000
+A,          0002 / WAS 51
+B,          0003 / was 27
+*30
+            MULT
+*6000
+MULT,       0000
+            CMA IAC / CIA
+            DCA MTALLY
+            TAD I MULT
+            ISZ MTALLY
+            JMP .-2
+            ISZ MULT
+            JMP I MULT
+MTALLY,     0000
+

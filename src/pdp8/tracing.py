@@ -28,12 +28,17 @@ class NullTracer(Tracer):
 
 
 class PrintingTracer(Tracer):
+    def __init__(self, source):
+        self.source = source
+        self.memset = ''
+
     def setting(self, address, contents):
-        print('setting %5d to %5d' % (address, contents))
+        self.memset = '%5d (0o%04o)<=%d' % (address, address, contents)
 
     def instruction(self, old_pc, opcode, accumulator, link, new_pc):
-        print('PC(before): %5d Opcode: %-4s Accumulator: %5d Link: %d PC(after): %5d' %
-              (old_pc, opcode, accumulator, link, new_pc))
+        print(' %30s @ %5d Opcode: %-4s ac: %5d l: %d PC(after): %5d %s' %
+              (self.source[old_pc], old_pc, opcode, accumulator, link, new_pc, self.memset))
+        self.memset = ''
 
     def halt(self, pc):
         print('Halted at %d(%o)' % (pc, pc))

@@ -19,8 +19,8 @@ RTL = octal('0006')
 IAC = octal('0001')
 HALT = octal('0002')
 BIT8 = octal('0010')
-Z_BIT = 0o0200
-I_BIT = 0o0400
+Z_BIT = octal('0200')
+I_BIT = octal('0400')
 
 
 class PDP8:
@@ -33,7 +33,7 @@ class PDP8:
     V_MASK = 2 ** V_BITS - 1    # mask for instruction data
     MAX = 2 ** (V_BITS - 1)
 
-    def __init__(self, tracer=None):
+    def __init__(self):
         self.memory = 2 ** self.W_BITS * [0]
         self.pc = 0
         self.accumulator = 0
@@ -46,9 +46,7 @@ class PDP8:
         self.tape = StringIO('')
         # self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
         # self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
-        if tracer is None:
-            tracer = NullTracer()
-        self.tracer = tracer
+        self.tracer = None
         self.ops = [self.andi,
                     self.tad,
                     self.isz,
@@ -82,8 +80,13 @@ class PDP8:
         if self.debugging:
             self.tracer.setting(address, contents)
 
-    def run(self, debugging=False, start=None, tape='', stepping=None):
+    def run(self, debugging=False, start=None, tape='', stepping=None, tracer=None):
         self.running = True
+        if tracer is not None:
+                self.tracer = tracer
+        else:
+            if self.tracer is None:
+                self.tracer = NullTracer()
         if start:
             self.pc = start
         # TODO: smarter tape creation to cope with text and binary tapes.
@@ -97,14 +100,14 @@ class PDP8:
                 self.running = False
 
     def execute(self):
-        # old_pc = self.pc  # for debugging
+        old_pc = self.pc  # for debugging
         self.instruction = self[self.pc]
         self.ia = self.instruction_address()
         op = self.opcode()
         self.pc += 1
         self.ops[op]()
-        # if self.debugging:
-        #     self.tracer.instruction(old_pc, self.mnemonic_for(instruction), self.accumulator, self.link, self.pc)
+        if self.debugging:
+            self.tracer.instruction(old_pc, self.instruction, self.accumulator, self.link, self.pc)
 
     def opcode(self):
         bits = self.i_mask(self.OP_MASK)
@@ -148,9 +151,11 @@ class PDP8:
     def iot(self):
         return self.tape.read(1)
 
+    # TODO: ettor if not g1, g2
     def opr(self):
         if self.is_group1():
             self.group1()
+            return
         if self.is_group2():
             self.group2()
 

@@ -1,0 +1,13 @@
+/ Multiply
+*200 /start at octal 200
+START,  CLA CLL
+        TAD A
+        CMA IAC
+        DCA 212
+MULT,   TAD B
+        ISZ TALLY
+        JMP MULT
+        HLT
+A,      0022
+B,      0044
+TALLY,  0000

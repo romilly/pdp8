@@ -5,8 +5,8 @@ from hamcrest import assert_that
 
 from pdp8.core import PDP8, octal
 from pdp8.pal import Pal
-from pdp8.tracing import NullTracer, HaltTracer
-from tests.helpers.checker import ConfigChecker
+from pdp8.tracing import HaltTracer
+from tests.helpers.checker import PDPChecker
 
 # TODO: Add tests (and then code) for AutoIndexing
 
@@ -15,7 +15,7 @@ class AbstractCodeTest(TestCase):
 
     def setUp(self):
         self.pdp = PDP8()
-        self.checker = ConfigChecker(self.pdp)
+        self.checker = PDPChecker(self.pdp)
         self.pal = Pal()
 
     def instruction(self, text):
@@ -159,7 +159,7 @@ class MriTest(AbstractCodeTest):
 class OprGroup1Test(TestCase):
     def setUp(self):
         self.pdp = PDP8()
-        self.checker = ConfigChecker(self.pdp)
+        self.checker = PDPChecker(self.pdp)
         self.pal = Pal()
 
     def instruction(self, text):

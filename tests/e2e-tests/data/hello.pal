@@ -41,44 +41,44 @@
     	HLT
 
     // "HELLO, WORLD!\r\n" in octal ASCIIZ
-    HWSTR,	110;
-            105;
-            114;
-            114;
-            117;	/ HELLO
-    	    54;				/ comma
-    	    40;				/ space
-    	    127;
-    	    117;
-    	    122;
-    	    114;
-    	    104;	/ WORLD
-    	    41;				/ bang
-    	15; 12;				/ CRLF
-    	0				/ null string terminator
+    HWSTR,	110
+            105
+            114
+            114
+            117	/ HELLO
+    	    54				/ comma
+    	    40				/ space
+    	    127
+    	    117
+    	    122
+    	    114
+    	    104	/ WORLD
+    	    41				/ bang
+    	    15
+    	    12				/ CRLF
+    	    0				/ null string terminator
 
 
     //// PRINTS ////////////////////////////////////////////////////////////
 
-    PRINTS,0
-    	DCA SADDR	/ save AC as string address
+    PRINTS, 0
+    	    DCA SADDR	/ save AC as string address
     PSNEXT,	TAD I SADDR	/ load next character
-    	SNA
-    	JMP I PRINTS	/ found the null terminator; leave
+            SNA
+            JMP I PRINTS	/ found the null terminator; leave
 
-    	TSF		/ wait for terminal to be ready
-    	JMP .-1
-    	TLS		/ write character to the terminal
+            TSF		/ wait for terminal to be ready
+            JMP .-1
+            TLS		/ write character to the terminal
 
-    	CLA		/ increment string address pointer
-    	TAD SADDR
-    	IAC
-    	DCA SADDR
+            CLA		/ increment string address pointer
+            TAD SADDR
+            IAC
+            DCA SADDR
 
-    	JMP PSNEXT	/ look at next character
+            JMP PSNEXT	/ look at next character
     SADDR,	0
 
 
     //// END ///////////////////////////////////////////////////////////////
-    $
 

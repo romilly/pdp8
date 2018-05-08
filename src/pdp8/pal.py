@@ -25,6 +25,9 @@ g1 =  name(multiple(osp+one_of('NOP', 'CLA', 'CLL', 'CMA', 'CML', 'RAR', 'RAL', 
 g2 =  name(multiple(osp+one_of('CLA', 'HLT', 'OSR', 'SKP', 'SMA', 'SNA', 'SNL', 'SPA', 'SZA', 'SZL')),'group2')
 opr = name(one_of(g1, g2),'opr')
 org = escape('*') + name(digits,'org')
+iot_reader = multiple(osp+one_of('KSF','KCC','KRS','KRB'))
+iot_punch = multiple(osp+one_of('TSF','TCF','TPC','TLS'))
+iot = name(one_of(iot_reader, iot_punch),'iot')
 
 
 mri_values = {
@@ -68,6 +71,17 @@ g2values = {
 'OSR':      0o7404, # Inclusive OR switch register        3
 #                    with AC
 'HLT':      0o7402, # Halts the program                   3
+}
+
+iotvalues = {
+'KSF':      0o6031,
+'KCC':      0o6032,
+'KRS':      0o6034,
+'KRB':      0o6036,
+'TSF':      0o6041,
+'TCF':      0o6042,
+'TPC':      0o6044,
+'TLS':      0o6046,
 }
 
 
@@ -194,9 +208,21 @@ class OprParser(Parser):
         codes = parsed['opr'].split()
         values = g1values if 'group1' in parsed else g2values
         for code in codes:
-            code_ = values[code]
-            op |= code_
+            op |= values[code]
         return op
+
+class IotParser(Parser):
+    def __init__(self, planter):
+        Parser.__init__(self, label + iot, planter)
+
+    def build_instruction(self, parsed):
+        op = 0
+        codes = parsed['iot'].split()
+
+        for code in codes:
+            op |= iotvalues[code]
+        return op
+
 
 
 class Org(Parser):
@@ -245,6 +271,7 @@ class Pal():
         self.pass1 = ChainBuilder(Org(self.planter), LabelParser(self.planter)).build()
         self.pass2 = ChainBuilder(MriParser(self.planter),
                                   OprParser(self.planter),
+                                  # IotParser(self.planter),
                                   Org(self.planter),
                                   ExprParser(self.planter)
                                   ).build()

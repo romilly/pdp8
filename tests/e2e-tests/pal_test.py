@@ -27,6 +27,17 @@ class PalTest(TestCase):
     def test_assembles_mul_sub(self):
         self.pal.assemble(StringIO(read('mul-sub.pal')), list_symbols=True)
         self.pdp8.run(start=octal('200'), debugging=True)
-        self.checker.check({136:6})
+        self.checker.check({136: 6})
 
-    #
+    def test_assembles_hw(self):
+        self.pal.assemble(StringIO(read('hello.pal')), list_symbols=True)
+        self.pdp8.run(start=octal('200'), debugging=True)
+        self.checker.check(output='HELLO, WORLD!\r\n')
+
+        # self.checker.check({136:6})
+    def test_assembles_one_char(self):
+        print('one-char')
+        self.pal.assemble(StringIO(read('one_char.pal')), list_symbols=True)
+        self.pdp8.run(start=octal('200'), debugging=True)
+        self.checker.check(output='A')
+

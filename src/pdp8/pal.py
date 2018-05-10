@@ -101,6 +101,8 @@ class Parser:
     def parse(self, input):
         for line in input:
             line = self.decommented_and_trimmed(line)
+            if '$' in line: # end of pal file
+                break
             if len(line) > 0:
                 self.parse_line(line)
 
@@ -128,7 +130,8 @@ class Parser:
         pass
 
     # remove comment text
-    def decommented_and_trimmed(self, line):
+    @staticmethod
+    def decommented_and_trimmed(line):
         line = line.split('/')[0]
         return line.strip()
 
@@ -186,11 +189,12 @@ class MriParser(Parser):
         offset = self.evaluate_offset(parsed)
         if offset < octal('200'):
             parsed['Z'] = 'Z' # force PAGE 0
-        offset_page = offset & octal('7400')
-        here_page = self.planter.ic & octal('7400')
-        if here_page != offset_page:
-            raise Exception('%s offset refers to an inaccessible page' % parsed['line'])
-        offset = offset & octal('177')
+        else:
+            offset_page = offset & octal('7600')
+            here_page = self.planter.ic & octal('7600')
+            if here_page != offset_page:
+                raise Exception('%s offset refers to an inaccessible page' % parsed['line'])
+            offset = offset & octal('177')
         op |= offset
         if 'Z' in parsed:
             op |= 0o0200
@@ -271,7 +275,7 @@ class Pal():
         self.pass1 = ChainBuilder(Org(self.planter), LabelParser(self.planter)).build()
         self.pass2 = ChainBuilder(MriParser(self.planter),
                                   OprParser(self.planter),
-                                  # IotParser(self.planter),
+                                  IotParser(self.planter),
                                   Org(self.planter),
                                   ExprParser(self.planter)
                                   ).build()

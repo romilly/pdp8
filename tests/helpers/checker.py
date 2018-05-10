@@ -1,4 +1,4 @@
-from hamcrest import assert_that
+from hamcrest import assert_that, equal_to
 from hamcrest.core.base_matcher import BaseMatcher
 
 
@@ -24,7 +24,7 @@ class PDPChecker(object):
     def __init__(self, pdp8):
        self.pdp8 = pdp8
 
-    def check(self, memory=None, pc=None, accumulator=None, link=None):
+    def check(self, memory=None, pc=None, accumulator=None, link=None, output=None):
         if memory is not None:
             for address in memory.keys():
                 assert_that(self.pdp8, memory_contains(address, memory[address]))
@@ -34,5 +34,7 @@ class PDPChecker(object):
             assert_that(self.pdp8.accumulator == accumulator, 'expected ac=%d but ac=%d' % (accumulator, self.pdp8.accumulator))
         if link is not None:
             assert_that(self.pdp8.link == link, 'expected link=%d but link=%d' % (link, self.pdp8.link))
+        if output is not None:
+            assert_that(self.pdp8.output,equal_to(output))
 
 

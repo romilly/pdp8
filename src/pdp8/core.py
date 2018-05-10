@@ -44,8 +44,10 @@ class PDP8:
         self.ia = None
         self.instruction = None
         self.tape = StringIO('')
-        # self.mnemonics = list([mnemonic for mnemonic in self.ops.keys()])
-        # self.fns = list([self.ops[mnemonic] for mnemonic in self.mnemonics])
+        self.READER = 0o03
+        self.PUNCH = 0o04
+        self.punchflag = 0
+        self.output = ''
         self.tracer = None
         self.ops = [self.andi,
                     self.tad,
@@ -149,7 +151,14 @@ class PDP8:
 
     # TODO: handle variants
     def iot(self):
-        return self.tape.read(1)
+        device = (self.instruction & 0o0770) >> 3
+        io_op = self.instruction & 0o0007
+        if device == self.READER:
+            self.reader(io_op)
+        elif device == self.PUNCH:
+            self.punch(io_op)
+        else:
+            raise ValueError('uknown device')
 
     # TODO: error if not g1, g2
     def opr(self):
@@ -260,3 +269,18 @@ class PDP8:
 
     def szl(self):
         return self.link == 0 or not (self.i_mask(octal('0020')))
+
+    def reader(self, io_op):
+        pass
+
+    def punch(self, io_op):
+        if (io_op & 1) and self.punchflag:
+            self.pc += 1
+        if io_op & 2:
+            self.punchflag = 0
+        if io_op & 4:
+            if self.accumulator != 0:
+                self.output += str(chr(self.accumulator))
+            self.punchflag = 1
+
+

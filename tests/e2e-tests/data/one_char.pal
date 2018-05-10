@@ -1,0 +1,14 @@
+*200
+OUTPUT,     CLA CLL
+            TLS
+            TAD HOLD
+            JMS TYPE
+            HLT
+TYPE,       0
+            TSF     / SKIP ON TELEPRINTER FLAG
+            JMP .-1
+            TLS
+            CLA CLL
+            JMP I TYPE
+HOLD,       101
+$

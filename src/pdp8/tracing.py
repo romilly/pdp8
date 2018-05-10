@@ -27,6 +27,10 @@ class NullTracer(Tracer):
         pass
 
 
+def signed(accumulator):
+    return accumulator if accumulator >= 0 else 2**16-accumulator
+
+
 class PrintingTracer(Tracer):
     def __init__(self, source):
         self.source = source
@@ -36,8 +40,8 @@ class PrintingTracer(Tracer):
         self.memset = '%5d (0o%04o)<=%d' % (address, address, contents)
 
     def instruction(self, old_pc, opcode, accumulator, link, new_pc):
-        print(' %30s @ %5d Opcode: %-4s ac: %5d l: %d PC(after): %5d %s' %
-              (self.source[old_pc], old_pc, opcode, accumulator, link, new_pc, self.memset))
+        print(' %30s @ %5d  ac: %5d/%-5d (%04o) l: %d PC(after): %5d %s' %
+              (self.source[old_pc], old_pc, accumulator, signed(accumulator), accumulator, link, new_pc, self.memset))
         self.memset = ''
 
     def halt(self, pc):

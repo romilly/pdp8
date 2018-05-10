@@ -36,11 +36,12 @@
     *200
     	CLA
     	TLS		/ send null character to terminal to prepare it
-    	TAD HWSTR   /TAD (HWSTR) / wassat?
+    	TAD ASTRING   / TAD (HWSTR) in original - seems to mean allocate a word and put add of HWSTR in it
     	JMS PRINTS
     	HLT
 
     // "HELLO, WORLD!\r\n" in octal ASCIIZ
+    ASTRING, HWSTR
     HWSTR,	110
             105
             114
@@ -81,4 +82,4 @@
 
 
     //// END ///////////////////////////////////////////////////////////////
-
+$

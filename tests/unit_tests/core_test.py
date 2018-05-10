@@ -145,7 +145,7 @@ class MriTest(AbstractCodeTest):
         self.pdp.memory[octal('202')] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
-        self.checker.check(memory={octal('203'):7}, accumulator=0)
+        self.checker.check(memory={octal('203'): 7}, accumulator=0)
 
     def test_indirect_and_zero_assignment(self):
         self.pdp.accumulator = 7
@@ -153,7 +153,7 @@ class MriTest(AbstractCodeTest):
         self.pdp.memory[2] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
-        self.checker.check(memory={octal('203'):7}, accumulator=0)
+        self.checker.check(memory={octal('203'): 7}, accumulator=0)
 
 
 class OprGroup1Test(AbstractCodeTest):

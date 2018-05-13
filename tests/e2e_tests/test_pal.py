@@ -21,23 +21,30 @@ class PalTest(TestCase):
 
     def test_assembles_mult(self):
         self.pal.assemble(StringIO(read('mult.pal')))
-        self.pdp8.run()
+        self.pdp8.run(start=octal('200'), debugging=True)
         self.checker.check(accumulator=648)
 
     def test_assembles_mul_sub(self):
         self.pal.assemble(StringIO(read('mul-sub.pal')), list_symbols=True)
         self.pdp8.run(start=octal('200'), debugging=True)
         self.checker.check({136: 6})
+    #
+    # def test_assembles_hw(self):
+    #     self.pal.assemble(StringIO(read('hello.pal')), list_symbols=True)
+    #     self.pdp8.run(start=octal('200'), debugging=True)
+    #     self.checker.check(output='HELLO, WORLD!\r\n')
 
-    def test_assembles_hw(self):
-        self.pal.assemble(StringIO(read('hello.pal')), list_symbols=True)
-        self.pdp8.run(start=octal('200'), debugging=True)
-        self.checker.check(output='HELLO, WORLD!\r\n')
-
-        # self.checker.check({136:6})
     def test_assembles_one_char(self):
-        print('one-char')
         self.pal.assemble(StringIO(read('one_char.pal')), list_symbols=True)
         self.pdp8.run(start=octal('200'), debugging=True)
         self.checker.check(output='A')
 
+    def test_search_1234(self):
+        self.pal.assemble(StringIO(read('search-1234.pal')), list_symbols=True)
+        self.pdp8.run(start=octal('200'), debugging=False)
+        self.checker.check(accumulator=0)
+
+    def test_isz(self):
+        self.pal.assemble(StringIO(read('isz-test.pal')), list_symbols=True)
+        self.pdp8.run(start=octal('200'), debugging=True)
+        self.checker.check(accumulator=0)

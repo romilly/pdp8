@@ -96,14 +96,14 @@ class MriTest(AbstractCodeTest):
 
     def test_page_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('AND 202') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('AND 202',octal('200')) # in page 1
         self.pdp.memory[octal('202')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.check(accumulator=4)
 
     def test_indirect_and_page_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('AND I 202') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('AND I 202', octal('200')) # in page 1
         self.pdp.memory[octal('202')] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
@@ -111,7 +111,7 @@ class MriTest(AbstractCodeTest):
 
     def test_indirect_and_zero_reference(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('AND I 2') # 2 in page 0
+        self.pdp.memory[octal('200')] = self.instruction('AND I 2', octal('200')) # 2 in page 0
         self.pdp.memory[2] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
@@ -134,7 +134,7 @@ class MriTest(AbstractCodeTest):
 
     def test_page_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('DCA 202') # in page 1
+        self.pdp.memory[octal('200')] = self.instruction('DCA 202',octal('200')) # in page 1
         self.pdp.memory[octal('202')] = 4
         self.pdp.run(start=octal('200'), stepping=True)
         self.check(memory={octal('202'):7}, accumulator=0)
@@ -149,7 +149,7 @@ class MriTest(AbstractCodeTest):
 
     def test_indirect_and_zero_assignment(self):
         self.pdp.accumulator = 7
-        self.pdp.memory[octal('200')] = self.instruction('DCA I Z 202') # 2 in page 0
+        self.pdp.memory[octal('200')] = self.instruction('DCA I Z 202',octal('200')) # 2 in page 0
         self.pdp.memory[2] = octal('203')
         self.pdp.memory[octal('203')] = 4
         self.pdp.run(start=octal('200'), stepping=True)

@@ -1,0 +1,9 @@
+*100
+TOP,        7777
+*200
+BEGIN,      CLA CLL
+LOOP,       ISZ TOP
+            JMP LOOP
+            HLT
+            $
+

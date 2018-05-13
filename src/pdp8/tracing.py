@@ -28,7 +28,7 @@ class NullTracer(Tracer):
 
 
 def signed(accumulator):
-    return accumulator if accumulator >= 0 else 2**16-accumulator
+    return accumulator if accumulator < 2**11 else accumulator-2**12
 
 
 class PrintingTracer(Tracer):

@@ -240,9 +240,11 @@ class PDP8:
 
     def group2(self):
         if self.is_or_group() and (self.sma() or self.sza() or self.snl()):
-                self.pc += 1
+            self.pc += 1
         if self.is_and_group() and self.spa() and self.sna() and self.szl():
-                self.pc += 1
+            self.pc += 1
+        if self.is_cla2():
+            self.cla()
         if self.is_halt():
             self.halt()
 
@@ -282,5 +284,8 @@ class PDP8:
             if self.accumulator != 0:
                 self.output += str(chr(self.accumulator))
             self.punchflag = 1
+
+    def is_cla2(self):
+        return self.instruction & octal('0200')
 
 

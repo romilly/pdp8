@@ -135,7 +135,7 @@ class Parser:
         line = line.split('/')[0]
         return line.strip()
 
-    def evaluate_offset(self, parsed):
+    def evaluate_expression(self, parsed):
         op = sub if 'function' in parsed and parsed['function'] == '-' else add
         v1 = self.evaluate_term(1, parsed)
         v2 = self.evaluate_term(2, parsed)
@@ -186,21 +186,25 @@ class MriParser(Parser):
 
     def build_instruction(self, parsed):
         op = mri_values[parsed['mri']]
-        offset = self.evaluate_offset(parsed)
-        if offset < octal('200'):
-            parsed['Z'] = 'Z' # force PAGE 0
-        else:
-            offset_page = offset & octal('7600')
-            here_page = self.planter.ic & octal('7600')
-            if here_page != offset_page:
-                raise Exception('%s offset refers to an inaccessible page' % parsed['line'])
-            offset = offset & octal('177')
+        offset = self.effective_offset(parsed)
         op |= offset
         if 'Z' in parsed:
             op |= 0o0200
         if 'I' in parsed:
             op |= 0o0400
         return op
+
+    def effective_offset(self, parsed):
+        offset = self.evaluate_expression(parsed)
+        if offset < octal('200'):
+            parsed['Z'] = 'Z'  # force PAGE 0
+        else:
+            offset_page = offset & octal('7600')
+            here_page = self.planter.ic & octal('7600')
+            if here_page != offset_page:
+                raise Exception('%s offset refers to an inaccessible page' % parsed['line'])
+            offset = offset & octal('177')
+        return offset
 
 
 class OprParser(Parser):
@@ -245,7 +249,7 @@ class ExprParser(Parser):
         Parser.__init__(self, label+osp+offset, planter)
 
     def build_instruction(self, parsed):
-        return self.evaluate_offset(parsed)
+        return self.evaluate_expression(parsed)
 
 
 class LabelParser(Parser):

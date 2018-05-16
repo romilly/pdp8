@@ -2,6 +2,8 @@
 
 A Python emulator for DEC's PDP8-S computer.
 
+[![Build status](https://travis-ci.org/romilly/pdp8.svg?master)](https://travis-ci.org/romilly)
+
 ## Why another emulator?
 
 There are already several emulators for the PDP-8.

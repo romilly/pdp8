@@ -3,9 +3,9 @@ from unittest import TestCase
 
 from hamcrest import assert_that
 
-from pdp8 import PDP8, octal
-from pdp8 import Pal
-from pdp8 import HaltTracer
+from pdp8.core import PDP8, octal
+from pdp8.pal import Pal
+from pdp8.tracing import HaltTracer
 from tests.helpers.checker import PDPChecker
 
 # TODO: Add tests (and then code) for AutoIndexing

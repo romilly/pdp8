@@ -2,8 +2,8 @@ from io import StringIO
 from unittest import TestCase
 
 from tests.helpers.checker import PDPChecker
-from pdp8 import PDP8, octal
-from pdp8 import Pal
+from pdp8.core import PDP8, octal
+from pdp8.pal import Pal
 
 
 def read(filename):

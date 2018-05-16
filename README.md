@@ -14,6 +14,11 @@ Many Pi users (myself among them) are more comfortable with Python,
 and writing my own emulator seemed the best way of making sure I really
 understood how the PDP-8 worked.
 
+## Requirements
+
+The project was developed using Python 3.5. The assembler depends on
+[reggie-dsl](https://pypi.org/project/reggie-dsl).
+
 ## Current Status
 
 The emulator and its assembler (also written in Python) are almost complete

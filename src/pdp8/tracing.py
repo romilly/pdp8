@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
-class Tracer(object):
+
+class Tracer(object): # pragma: no cover
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -16,7 +17,7 @@ class Tracer(object):
         pass
 
 
-class NullTracer(Tracer):
+class NullTracer(Tracer): # pragma: no cover
     def instruction(self, old_pc, opcode, accumulator, link, new_pc):
         pass
 

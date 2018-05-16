@@ -94,10 +94,6 @@ class Parser:
         self.successor = None
         self.base = 8
 
-    def after(self, successor):
-        successor.successor = self
-        return successor
-
     def parse(self, input):
         for line in input:
             line = self.decommented_and_trimmed(line)
@@ -174,11 +170,6 @@ class InstructionPlanter():
     def define(self, symbol):
         self.symbols[symbol] = self.ic
 
-    def evaluate(self, symbol):
-        if symbol in self.symbols:
-            return self.symbols[symbol]
-        raise(ValueError('symbol %s is undefined'))
-
 
 class MriParser(Parser):
     def __init__(self, planter):
@@ -219,6 +210,7 @@ class OprParser(Parser):
             op |= values[code]
         return op
 
+
 class IotParser(Parser):
     def __init__(self, planter):
         Parser.__init__(self, label + iot, planter)
@@ -232,16 +224,12 @@ class IotParser(Parser):
         return op
 
 
-
 class Org(Parser):
     def __init__(self, planter):
         Parser.__init__(self, org, planter)
 
     def plant(self, parsed, line):
         self.planter.org(int(parsed['org'],self.base))
-
-    def build_instruction(self, parsed):
-        pass
 
 
 class ExprParser(Parser):

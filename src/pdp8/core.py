@@ -44,8 +44,8 @@ class PDP8:
         self.ia = None
         self.instruction = None
         self.tape = StringIO('')
-        self.READER = 0o03
-        self.PUNCH = 0o04
+        self.READER1 = 0o03
+        self.PUNCH1 = 0o04
         self.punchflag = 0
         self.output = ''
         self.tracer = None
@@ -149,18 +149,16 @@ class PDP8:
         self[self.ia] = self.pc
         self.pc = self.ia + 1
 
-    # TODO: handle variants
     def iot(self):
         device = (self.instruction & 0o0770) >> 3
         io_op = self.instruction & 0o0007
-        if device == self.READER:
+        if device == self.READER1:
             self.reader(io_op)
-        elif device == self.PUNCH:
+        elif device == self.PUNCH1:
             self.punch(io_op)
         else:
             raise ValueError('uknown device')
 
-    # TODO: error if not g1, g2
     def opr(self):
         if self.is_group1():
             self.group1()
@@ -222,9 +220,6 @@ class PDP8:
             print('Halted')
         self.tracer.halt(self.pc)
         self.running = False
-
-    # def mnemonic_for(self, instruction):
-    #     return self.ins.mnemonic_for(instruction)
 
     def group1(self):
         for (mask, ins) in zip([     CLA1,     CLL,      CMA,      CML,      IAC,     RAR,     RAL],

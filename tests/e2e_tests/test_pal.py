@@ -1,10 +1,9 @@
 from io import StringIO
 from unittest import TestCase
 
-from helpers.checker import PDPChecker
+from tests.helpers.checker import PDPChecker
 from pdp8.core import PDP8, octal
 from pdp8.pal import Pal
-from pdp8.tracing import PrintingTracer
 
 
 def read(filename):

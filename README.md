@@ -29,10 +29,10 @@ and they can run many of the sample programs in DEC's 1969 *Introduction to Prog
 I have not yet implemented auto-increment registers but I will do so next week.
 
 I have not yet implemented interrupts, partly because I am stuck working out how to do
-create an ene-to-end test.
+create an end-to-end test.
 
 I can write unit tests but these will just verify that I've written
-the code they way i *think* the PDP8 works.
+the code they way I *think* the PDP8 works.
 
 I need a known-good program to run that will
 verify correct implementation. Suggestions welcome!

@@ -102,11 +102,11 @@ class Parser:
             if len(line) > 0:
                 self.parse_line(line)
 
-    def match(self, line, statement):
-        return match(statement, line)
+    def match(self, statement, line):
+        return match_line(statement, line)
 
     def parse_line(self, line):
-        statement = self.match(line, self.syntax)
+        statement = self.match(self.syntax, line)
         if statement is None:
             self.pass_the_buck(line)
         else:

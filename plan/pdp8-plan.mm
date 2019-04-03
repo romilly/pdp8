@@ -1,6 +1,6 @@
-<map version="freeplane 1.3.0">
+<map version="freeplane 1.5.9">
 <!--To view this file, download free mind mapping software Freeplane from http://freeplane.sourceforge.net -->
-<node ID="Freemind_Link_1331878192" CREATED="1266488194781" MODIFIED="1399884031997"><richcontent TYPE="NODE">
+<node FOLDED="false" ID="Freemind_Link_1331878192" CREATED="1266488194781" MODIFIED="1399884031997"><richcontent TYPE="NODE">
 
 <html>
   <head>
@@ -14,21 +14,26 @@
 </html>
 </richcontent>
 <hook NAME="MapStyle">
+    <properties fit_to_viewport="false;"/>
 
 <map_styles>
-<stylenode LOCALIZED_TEXT="styles.root_node">
-<stylenode LOCALIZED_TEXT="styles.predefined" POSITION="right">
-<stylenode LOCALIZED_TEXT="default" MAX_WIDTH="600" COLOR="#000000" STYLE="as_parent">
+<stylenode LOCALIZED_TEXT="styles.root_node" STYLE="oval" UNIFORM_SHAPE="true" VGAP_QUANTITY="24.0 pt">
+<font SIZE="24"/>
+<stylenode LOCALIZED_TEXT="styles.predefined" POSITION="right" STYLE="bubble">
+<stylenode LOCALIZED_TEXT="default" MAX_WIDTH="600.0 px" COLOR="#000000" STYLE="as_parent">
 <font NAME="SansSerif" SIZE="10" BOLD="false" ITALIC="false"/>
 </stylenode>
 <stylenode LOCALIZED_TEXT="defaultstyle.details"/>
+<stylenode LOCALIZED_TEXT="defaultstyle.attributes">
+<font SIZE="9"/>
+</stylenode>
 <stylenode LOCALIZED_TEXT="defaultstyle.note"/>
 <stylenode LOCALIZED_TEXT="defaultstyle.floating">
 <edge STYLE="hide_edge"/>
 <cloud COLOR="#f0f0f0" SHAPE="ROUND_RECT"/>
 </stylenode>
 </stylenode>
-<stylenode LOCALIZED_TEXT="styles.user-defined" POSITION="right">
+<stylenode LOCALIZED_TEXT="styles.user-defined" POSITION="right" STYLE="bubble">
 <stylenode LOCALIZED_TEXT="styles.topic" COLOR="#18898b" STYLE="fork">
 <font NAME="Liberation Sans" SIZE="10" BOLD="true"/>
 </stylenode>
@@ -42,7 +47,7 @@
 <icon BUILTIN="yes"/>
 </stylenode>
 </stylenode>
-<stylenode LOCALIZED_TEXT="styles.AutomaticLayout" POSITION="right">
+<stylenode LOCALIZED_TEXT="styles.AutomaticLayout" POSITION="right" STYLE="bubble">
 <stylenode LOCALIZED_TEXT="AutomaticLayout.level.root" COLOR="#000000">
 <font SIZE="18"/>
 </stylenode>
@@ -62,12 +67,28 @@
 </stylenode>
 </map_styles>
 </hook>
-<node TEXT="Goal" POSITION="right" ID="Freemind_Link_1242386705" CREATED="1266488217621" MODIFIED="1485097924419" COLOR="#37a3cb"/>
+<node TEXT="Goal" POSITION="right" ID="Freemind_Link_1242386705" CREATED="1266488217621" MODIFIED="1485097924419" COLOR="#37a3cb">
+<node TEXT="build a Pythonic PDP-8 emulator for the Pi" ID="ID_611967686" CREATED="1527847779271" MODIFIED="1527847897174"/>
+<node TEXT="follow-on 74HC00 series-based PDP-8/S emulator" ID="ID_1577582553" CREATED="1527847855046" MODIFIED="1527847914783"/>
+</node>
 <node TEXT="Plan" POSITION="right" ID="_" CREATED="1266488212530" MODIFIED="1266488546784" COLOR="#373dcb">
 <edge COLOR="#808080"/>
+<node TEXT="code a command-line driven emulator" ID="ID_1798880064" CREATED="1527847814375" MODIFIED="1527847823937"/>
+<node TEXT="add PiDP8 front panel" ID="ID_909064946" CREATED="1527847796839" MODIFIED="1527847813481"/>
+<node TEXT="Logisim 74HC simulation" ID="ID_1382501542" CREATED="1527847926453" MODIFIED="1527847968997"/>
+<node TEXT="build building-blocks" ID="ID_1553313457" CREATED="1527847949253" MODIFIED="1527847962701">
+<node TEXT="Memory" ID="ID_897729448" CREATED="1527847970620" MODIFIED="1527847976471"/>
+<node TEXT="ALU" ID="ID_936052287" CREATED="1527847976844" MODIFIED="1527847979415"/>
+<node TEXT="Registers" ID="ID_1734859549" CREATED="1527847980292" MODIFIED="1527847983495"/>
+<node TEXT="Control Unit" ID="ID_797090402" CREATED="1527847983756" MODIFIED="1527847991798"/>
+<node TEXT="I/O" ID="ID_294921406" CREATED="1527847992116" MODIFIED="1527847997046">
+<node TEXT="Paper tape" ID="ID_1367780424" CREATED="1527847998860" MODIFIED="1527848011094"/>
+<node TEXT="I/O" ID="ID_235204487" CREATED="1527848002332" MODIFIED="1527848007572"/>
+</node>
+</node>
 </node>
 <node TEXT="Tasks" POSITION="right" ID="Freemind_Link_857865306" CREATED="1266488223477" MODIFIED="1266488636684" COLOR="#de5613"/>
-<node TEXT="Review" POSITION="left" ID="Freemind_Link_1153466861" CREATED="1266488259116" MODIFIED="1266488895851" COLOR="#fb1802">
+<node TEXT="Review" FOLDED="true" POSITION="left" ID="Freemind_Link_1153466861" CREATED="1266488259116" MODIFIED="1266488895851" COLOR="#fb1802">
 <icon BUILTIN="xmag"/>
 <node TEXT="WW" ID="Freemind_Link_1466796877" CREATED="1266488965666" MODIFIED="1296303686570" COLOR="#ffcc00" BACKGROUND_COLOR="#006666">
 <icon BUILTIN="button_ok"/>
@@ -102,6 +123,8 @@
 </node>
 <node TEXT="Resources" POSITION="left" ID="Freemind_Link_1594441695" CREATED="1273319832507" MODIFIED="1296303609303" COLOR="#33ff33">
 <icon BUILTIN="password"/>
+<node TEXT="https://en.m.wikipedia.org/wiki/EDUC-8" ID="ID_1555493858" CREATED="1528882344157" MODIFIED="1528882344157" LINK="https://en.m.wikipedia.org/wiki/EDUC-8"/>
+<node TEXT="http://www.ljw.me.uk/educ8/educ8.html" ID="ID_1703595754" CREATED="1528882356067" MODIFIED="1528882356067" LINK="http://www.ljw.me.uk/educ8/educ8.html"/>
 </node>
 </node>
 </map>

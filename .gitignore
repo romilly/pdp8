@@ -138,4 +138,5 @@ ENV/
 plan/resources/
 .idea/
 /tests/unit_tests/.pytest_cache/
-!/docs/pdp8/
+/plan/manuals/
+

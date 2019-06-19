@@ -4,6 +4,8 @@ A Python emulator for DEC's PDP-8 computer.
 
 [![Build status](https://travis-ci.org/romilly/pdp8.svg?master)](https://travis-ci.org/romilly)
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ff6e7cc106244d2ab0a27b0e5da0e096)](https://www.codacy.com/app/romilly/pdp8?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=romilly/pdp8&amp;utm_campaign=Badge_Grade)
+
 ## Why another emulator?
 
 There are already several emulators for the PDP8.
@@ -26,7 +28,7 @@ The project was developed using Python 3.5. The assembler depends on
 The emulator and its assembler (also written in Python) are almost complete
 and they can run many of the sample programs in DEC's 1969 *Introduction to Programming*.
 
-I have not yet implemented auto-increment registers but I will do so next week.
+I have not yet implemented auto-increment registers but I will do so.
 
 I have not yet implemented interrupts, partly because I am stuck working out how to do
 create an end-to-end test.

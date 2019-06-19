@@ -140,3 +140,4 @@ plan/resources/
 /tests/unit_tests/.pytest_cache/
 /plan/manuals/
 
+/plan/note-to-group.txt

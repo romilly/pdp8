@@ -15,7 +15,7 @@ The most
 is written in C.
 
 Many Pi users (myself among them) are more comfortable with Python,
-and writing my own emulator seemed the best way of making sure I really
+and writing my own emulator seemed the best way of making sure I
 understood how the PDP-8 worked.
 
 ## Requirements
